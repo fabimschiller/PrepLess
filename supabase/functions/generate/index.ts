@@ -230,12 +230,17 @@ Anwendungsaufgaben zu linearen Gleichungen`;
     const suggestionData = await suggestionRes.json();
     const rawText = suggestionData.content?.[0]?.text?.trim() ?? "";
     
+    console.log('RAW SUGGESTION TEXT:', JSON.stringify(rawText));
+    console.log('SUGGESTION DATA:', JSON.stringify(suggestionData, null, 2));
+    
     // Splitte nach Zeilenumbruch und filtere leere Zeilen
     const suggestions = rawText
       .split("\n")
       .map((line) => line.trim())
       .filter((line) => line.length > 0)
       .slice(0, 3); // Maximal 3 Vorschläge
+
+    console.log('PARSED SUGGESTIONS:', JSON.stringify(suggestions));
 
     return new Response(
       JSON.stringify({ suggestions }),
