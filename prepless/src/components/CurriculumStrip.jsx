@@ -87,22 +87,33 @@ export default function CurriculumStrip({
       if (!loadedUnits.length || !onSlotSelect) return
 
       // Auto-Select: zuletzt gespeicherte 'planned'-Stunde,
-      // fallback auf zuletzt gespeicherte 'conducted'-Stunde
+      // fallback auf zuletzt gespeicherte 'conducted'-Stunde,
+      // fallback auf erste Einheit / Slot 0
       const candidate =
         allLessons.find((l) => l.status === 'planned') ??
         allLessons.find((l) => l.status === 'conducted') ??
         null
 
-      if (!candidate) return
+      if (candidate) {
+        const unit = loadedUnits.find((u) => u.id === candidate.curriculum_unit_id)
+        if (unit) {
+          const slotIndex = candidate.position - 1
+          setExpandedUnitId(unit.id)
+          setActiveSlot({ unitId: unit.id, slotIndex })
+          autoSelectDoneRef.current = true
+          onSlotSelect({ unit, slotIndex, lesson: candidate })
+          return
+        }
+      }
 
-      const unit = loadedUnits.find((u) => u.id === candidate.curriculum_unit_id)
-      if (!unit) return
-
-      const slotIndex = candidate.position - 1
-      setExpandedUnitId(unit.id)
-      setActiveSlot({ unitId: unit.id, slotIndex })
-      autoSelectDoneRef.current = true
-      onSlotSelect({ unit, slotIndex, lesson: candidate })
+      // Fallback: keine Stunde vorhanden → erste Einheit, Slot 0
+      const firstUnit = loadedUnits[0]
+      if (firstUnit) {
+        setExpandedUnitId(firstUnit.id)
+        setActiveSlot({ unitId: firstUnit.id, slotIndex: 0 })
+        autoSelectDoneRef.current = true
+        onSlotSelect({ unit: firstUnit, slotIndex: 0, lesson: null })
+      }
     })
 
     return () => { cancelled = true }

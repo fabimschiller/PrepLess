@@ -85,6 +85,15 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       .then(({ data }) => setStudents(data ?? []))
   }, [activeClass?.id])
 
+  // Klassenwechsel: Content sofort löschen damit kein alter Inhalt sichtbar bleibt
+  useEffect(() => {
+    setContent('')
+    setSavedLessonId(null)
+    setLessonStatus(null)
+    setTopic('')
+    abortRef.current?.abort()
+  }, [activeClass?.id]) // eslint-disable-line
+
   // Slot wechselt: Felder zurücksetzen / vorbelegen
   useEffect(() => {
     abortRef.current?.abort()

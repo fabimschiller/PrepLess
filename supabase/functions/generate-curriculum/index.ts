@@ -24,18 +24,32 @@ const CORS_HEADERS: Record<string, string> = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `Du bist ein erfahrener Lehrplan-Experte und kennst den LehrplanPLUS Bayern sowie die KMK-Bildungsstandards. Erstelle einen vollständigen Jahres-Lehrplan für die angegebene Klasse und das angegebene Fach.
+const SYSTEM_PROMPT = `Du bist ein erfahrener Lehrplan-Experte und kennst den LehrplanPLUS Bayern sowie die KMK-Bildungsstandards. Erstelle einen vollständigen Jahres-Lehrplan für die angegebene Klasse.
 
-Antworte ausschließlich mit einem JSON-Array. Jede Einheit hat die Felder:
-- title: kurzer Themenname (z.B. 'Quadratische Funktionen')
+Deine Antwort MUSS ein JSON-Array sein und NICHTS ANDERES. Kein einleitender Text, kein abschließender Text, keine Markdown-Codeblöcke (keine Backticks), kein Objekt drum herum.
+
+Das Array hat exakt dieses Format:
+[
+  {
+    "title": "Kurzer Themenname",
+    "description": "1-2 Sätze zu den Inhalten",
+    "estimated_hours": 6,
+    "start_month": 1,
+    "end_month": 2
+  }
+]
+
+Felder:
+- title: kurzer Themenname (z.B. "Quadratische Funktionen")
 - description: 1-2 Sätze Beschreibung der Inhalte
-- estimated_hours: realistische Stundenanzahl (4-12)
-- start_month: Schulmonat von 1 (September) bis 10 (Juli)
-- end_month: Schulmonat von 1 bis 10
+- estimated_hours: ganze Zahl zwischen 4 und 12
+- start_month: Schulmonat als Zahl: 1=September, 2=Oktober, 3=November, 4=Dezember, 5=Januar, 6=Februar, 7=März, 8=April, 9=Mai, 10=Juli
+- end_month: Schulmonat als Zahl (wie start_month)
 
-Der Lehrplan soll 6-10 Einheiten umfassen, chronologisch sinnvoll geordnet (position 1-N), und das gesamte Schuljahr abdecken. Halte dich an die offiziellen Lehrplanvorgaben für das genannte Bundesland.
+6-10 Einheiten, chronologisch, gesamtes Schuljahr abdeckend.
+Halte dich an die Lehrplanvorgaben für das genannte Bundesland und den Schultyp.
 
-WICHTIG: Antworte NUR mit dem JSON-Array, ohne Markdown-Codeblöcke, ohne Erklärungstext davor oder danach.`;
+ANTWORTE NUR MIT DEM JSON-ARRAY. BEGINNE MIT [ UND ENDE MIT ].`;
 
 interface GenerateCurriculumRequest {
   classId?: string;
@@ -100,39 +114,41 @@ function jsonError(status: number, message: string): Response {
 }
 
 /**
- * Extrahiert ein JSON-Array aus der Claude-Antwort. Der Prompt verlangt reinen
- * JSON-Output, aber wir bauen einen kleinen Fallback ein, falls das Modell
- * Markdown oder zusätzlichen Text mitschickt.
+ * Extrahiert ein JSON-Array aus der Claude-Antwort.
+ * Drei Versuche in absteigender Präzision.
  */
 function extractJsonArray(raw: string): unknown {
-  const trimmed = raw.trim();
+  const text = raw.trim();
+
+  // Hilfsfunktion: wenn das Ergebnis ein Objekt statt Array ist,
+  // nach dem ersten Array-Wert darin suchen
+  function unwrapIfNeeded(val: unknown): unknown {
+    if (Array.isArray(val)) return val;
+    if (val && typeof val === "object") {
+      for (const v of Object.values(val as Record<string, unknown>)) {
+        if (Array.isArray(v) && v.length > 0) return v;
+      }
+    }
+    return val;
+  }
 
   // 1) Direkter Parse
-  try {
-    return JSON.parse(trimmed);
-  } catch (_) {
-    // weiter unten
-  }
+  try { return unwrapIfNeeded(JSON.parse(text)); } catch { /* weiter */ }
 
-  // 2) Markdown-Codeblock entfernen
-  const fence = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  // 2) Markdown-Codeblock (```json … ``` oder ``` … ```)
+  const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fence) {
-    try {
-      return JSON.parse(fence[1].trim());
-    } catch (_) {
-      // weiter unten
-    }
+    try { return unwrapIfNeeded(JSON.parse(fence[1].trim())); } catch { /* weiter */ }
   }
 
-  // 3) Erstes "[" bis letztes "]"
-  const start = trimmed.indexOf("[");
-  const end = trimmed.lastIndexOf("]");
+  // 3) Erstes '[' bis letztes ']'
+  const start = text.indexOf("[");
+  const end = text.lastIndexOf("]");
   if (start !== -1 && end !== -1 && end > start) {
-    const slice = trimmed.slice(start, end + 1);
-    return JSON.parse(slice);
+    try { return unwrapIfNeeded(JSON.parse(text.slice(start, end + 1))); } catch { /* weiter */ }
   }
 
-  throw new Error("Konnte JSON-Array aus Anthropic-Antwort nicht extrahieren.");
+  throw new Error("Konnte JSON-Array nicht extrahieren. Antwort: " + text.slice(0, 300));
 }
 
 function validateUnits(arr: unknown): CurriculumUnit[] {
@@ -207,13 +223,13 @@ Deno.serve(async (req: Request) => {
     return jsonError(400, "Ungültiger JSON-Body.");
   }
 
-  const { classId, grade, state } = body;
+  const { classId, subject, subjects, school_type, grade, state } = body;
   if (!classId || !grade || !state) {
     return jsonError(400, "classId, grade und state sind erforderlich.");
   }
 
   // Anthropic aufrufen (kein Streaming – wir wollen das vollständige JSON)
-  const userPrompt = buildUserPrompt({ classId, subject, grade, state });
+  const userPrompt = buildUserPrompt({ classId, subject, subjects, school_type, grade, state });
 
   const anthropicRes = await fetch(ANTHROPIC_API_URL, {
     method: "POST",
