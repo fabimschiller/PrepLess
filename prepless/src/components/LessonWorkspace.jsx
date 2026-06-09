@@ -146,7 +146,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       setSavedLessonId(lesson.id)
       setLessonStatus(lesson.status ?? 'planned')
     } else {
-      setTopic(`${unit.title} – Stunde ${slotIndex + 1} von ${unit.estimated_hours}`)
+      setTopic('')
       setContent('')
       setSavedLessonId(null)
       setLessonStatus(null)

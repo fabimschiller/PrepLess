@@ -211,7 +211,7 @@
 }
 
 .suggestion-chip {
-  padding: 6px 12px;
+  padding: 8px 14px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 20px;
@@ -219,10 +219,11 @@
   font-size: 13px;
   cursor: pointer;
   transition: all 0.15s ease;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 300px;
+  white-space: normal;
+  word-break: break-word;
+  text-align: center;
+  flex: 1 1 calc(33.333% - 6px);
+  min-width: 150px;
 }
 
 .suggestion-chip:hover {
