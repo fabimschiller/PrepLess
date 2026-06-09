@@ -542,7 +542,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
         <input
           id="ws-topic"
           type="text"
-          placeholder="z.B. Lineare Funktionen – Steigung erarbeiten"
+          placeholder="Vorschlag wählen oder Thema selbst festlegen"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           disabled={isStreaming}
