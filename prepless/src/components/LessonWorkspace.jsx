@@ -206,7 +206,37 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     try {
       const { response, signal } = await callGenerateStream()
       let acc = ''
-      await streamSSE(response, (chunk) => { acc += chunk; setContent(acc) }, signal)
+      await streamSSE(response, (chunk) => {
+        acc += chunk
+        
+        // Prüfe ob wir bereits einen Titel extrahiert haben
+        if (acc.includes('TITEL:') && !acc.includes('\n\n')) {
+          // Noch nicht vollständig extrahiert, warte weiter
+          setContent(acc)
+        } else if (acc.startsWith('TITEL:')) {
+          // Titel-Zeile vorhanden, extrahiere sie
+          const firstDoubleNewline = acc.indexOf('\n\n')
+          if (firstDoubleNewline !== -1) {
+            const titleLine = acc.substring(0, firstDoubleNewline)
+            const contentAfterTitle = acc.substring(firstDoubleNewline + 2)
+            
+            // Extrahiere den Titel (Text nach "TITEL: ")
+            const titleMatch = titleLine.match(/^TITEL:\s*(.+)$/)
+            if (titleMatch && titleMatch[1]) {
+              setTopic(titleMatch[1].trim())
+            }
+            
+            // Zeige nur den Content nach der Titel-Zeile
+            setContent(contentAfterTitle)
+          } else {
+            // Noch nicht vollständig, zeige alles
+            setContent(acc)
+          }
+        } else {
+          // Kein Titel, zeige wie vorher
+          setContent(acc)
+        }
+      }, signal)
     } catch (err) {
       if (err.name !== 'AbortError') setGenError(err.message ?? String(err))
     } finally {
@@ -227,7 +257,37 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
         refinementRequest: req,
       })
       let acc = ''
-      await streamSSE(response, (chunk) => { acc += chunk; setContent(acc) }, signal)
+      await streamSSE(response, (chunk) => {
+        acc += chunk
+        
+        // Prüfe ob wir bereits einen Titel extrahiert haben
+        if (acc.includes('TITEL:') && !acc.includes('\n\n')) {
+          // Noch nicht vollständig extrahiert, warte weiter
+          setContent(acc)
+        } else if (acc.startsWith('TITEL:')) {
+          // Titel-Zeile vorhanden, extrahiere sie
+          const firstDoubleNewline = acc.indexOf('\n\n')
+          if (firstDoubleNewline !== -1) {
+            const titleLine = acc.substring(0, firstDoubleNewline)
+            const contentAfterTitle = acc.substring(firstDoubleNewline + 2)
+            
+            // Extrahiere den Titel (Text nach "TITEL: ")
+            const titleMatch = titleLine.match(/^TITEL:\s*(.+)$/)
+            if (titleMatch && titleMatch[1]) {
+              setTopic(titleMatch[1].trim())
+            }
+            
+            // Zeige nur den Content nach der Titel-Zeile
+            setContent(contentAfterTitle)
+          } else {
+            // Noch nicht vollständig, zeige alles
+            setContent(acc)
+          }
+        } else {
+          // Kein Titel, zeige wie vorher
+          setContent(acc)
+        }
+      }, signal)
       setRefinement('')
     } catch (err) {
       if (err.name !== 'AbortError') {
