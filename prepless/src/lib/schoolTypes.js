@@ -1,3 +1,12 @@
+export const SCHOOL_TYPE_SHORT = {
+  'Grundschule': 'GS',
+  'Mittelschule': 'MS',
+  'Realschule': 'RS',
+  'Gymnasium': 'GYM',
+  'Förderschule': 'FÖS',
+  'Berufsschule': 'BS',
+}
+
 export const SCHOOL_TYPES = [
   'Grundschule',
   'Mittelschule',

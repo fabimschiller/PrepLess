@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useClasses } from '../context/ClassesContext'
+import { SCHOOL_TYPE_SHORT } from '../lib/schoolTypes'
 import './AppLayout.css'
 
 const NAV_ITEMS = [
@@ -56,7 +57,14 @@ export default function AppLayout({ user }) {
                         }}
                       />
                       <span className="sidebar-class-label">
-                        <span className="sidebar-class-name">{cls.name}</span>
+                        <span className="sidebar-class-name">
+                          {cls.name}
+                          {cls.school_type && (
+                            <span className="school-type-badge">
+                              {' '}{SCHOOL_TYPE_SHORT[cls.school_type] ?? cls.school_type}
+                            </span>
+                          )}
+                        </span>
                         <span className="sidebar-class-meta">
                           {cls.school_type
                             ? `${cls.school_type} · Jg. ${cls.grade}`

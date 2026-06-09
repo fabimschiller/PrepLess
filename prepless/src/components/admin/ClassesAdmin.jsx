@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useClasses } from '../../context/ClassesContext'
 import { generateCurriculumForClass } from '../../lib/curriculum'
-import { SCHOOL_TYPES, SUBJECTS_BY_TYPE } from '../../lib/schoolTypes'
+import { SCHOOL_TYPES, SUBJECTS_BY_TYPE, SCHOOL_TYPE_SHORT } from '../../lib/schoolTypes'
 import './AdminTables.css'
 
 const BUNDESLAENDER = ['Bayern']
@@ -300,6 +300,11 @@ export default function ClassesAdmin() {
                       <>
                         <td>
                           <strong>{cls.name}</strong>
+                          {cls.school_type && (
+                            <span className="school-type-badge" style={{ marginLeft: 6 }}>
+                              {SCHOOL_TYPE_SHORT[cls.school_type] ?? cls.school_type}
+                            </span>
+                          )}
                           {activeClassId === cls.id && <span className="badge-active">Aktiv</span>}
                         </td>
                         <td>{cls.school_type ?? '—'}</td>

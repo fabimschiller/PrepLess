@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useClasses } from '../context/ClassesContext'
+import { SCHOOL_TYPE_SHORT } from '../lib/schoolTypes'
 import ClassesAdmin from '../components/admin/ClassesAdmin'
 import StudentsAdmin from '../components/admin/StudentsAdmin'
 import CurriculumAdmin from '../components/admin/CurriculumAdmin'
@@ -27,7 +28,7 @@ export default function Verwaltung() {
           <h1>Verwaltung</h1>
           <p className="page-subtitle">
             {activeClass
-              ? `Aktive Klasse: ${activeClass.name} · ${activeClass.school_type ?? activeClass.subject} · Jg. ${activeClass.grade}`
+              ? `Aktive Klasse: ${activeClass.name}${activeClass.school_type ? ' ' + (SCHOOL_TYPE_SHORT[activeClass.school_type] ?? activeClass.school_type) : ''} · ${activeClass.school_type ?? activeClass.subject} · Jg. ${activeClass.grade}`
               : 'Klassen, Schüler und Lehrpläne verwalten.'}
           </p>
         </div>

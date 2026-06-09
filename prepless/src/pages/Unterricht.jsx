@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { useClasses } from '../context/ClassesContext'
+import { SCHOOL_TYPE_SHORT } from '../lib/schoolTypes'
 import CurriculumStrip from '../components/CurriculumStrip'
 import LessonWorkspace from '../components/LessonWorkspace'
 import StudentFocus from '../components/StudentFocus'
@@ -40,7 +41,18 @@ export default function Unterricht() {
     <div className="unterricht-page">
       <header className="unterricht-topbar">
         <div>
-          <h1>{activeClass ? activeClass.name : 'Unterricht'}</h1>
+          <h1>
+            {activeClass ? (
+              <>
+                {activeClass.name}
+                {activeClass.school_type && (
+                  <span className="school-type-badge">
+                    {' '}{SCHOOL_TYPE_SHORT[activeClass.school_type] ?? activeClass.school_type}
+                  </span>
+                )}
+              </>
+            ) : 'Unterricht'}
+          </h1>
           <p className="page-subtitle">
             {activeClass
               ? `${activeClass.subject} · Jahrgang ${activeClass.grade} · ${activeClass.state}`
