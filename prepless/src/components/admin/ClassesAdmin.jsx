@@ -21,21 +21,31 @@ function SubjectCheckboxes({ schoolType, selected, onChange }) {
   if (!schoolType || available.length === 0) {
     return <p className="empty-state" style={{ padding: 0 }}>Bitte erst Schultyp wählen.</p>
   }
+  const allSelected = available.every((s) => selected.includes(s))
   return (
-    <div className="subject-checkboxes">
-      {available.map((s) => (
-        <label key={s} className="subject-checkbox-label">
-          <input
-            type="checkbox"
-            checked={selected.includes(s)}
-            onChange={(e) => {
-              if (e.target.checked) onChange([...selected, s])
-              else onChange(selected.filter((x) => x !== s))
-            }}
-          />
-          {s}
-        </label>
-      ))}
+    <div>
+      <button
+        type="button"
+        className="subjects-toggle"
+        onClick={() => onChange(allSelected ? [] : [...available])}
+      >
+        {allSelected ? 'Alle abwählen' : 'Alle auswählen'}
+      </button>
+      <div className="subject-checkboxes">
+        {available.map((s) => (
+          <label key={s} className="subject-checkbox-label">
+            <input
+              type="checkbox"
+              checked={selected.includes(s)}
+              onChange={(e) => {
+                if (e.target.checked) onChange([...selected, s])
+                else onChange(selected.filter((x) => x !== s))
+              }}
+            />
+            {s}
+          </label>
+        ))}
+      </div>
     </div>
   )
 }
