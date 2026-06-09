@@ -18,8 +18,8 @@ export default function Unterricht() {
   // Wenn Klasse wechselt: alles zurücksetzen
   const classId = activeClass?.id ?? null
 
-  // Wenn eine Stunde gespeichert wird: Strip informieren (Slot-Zustand aktualisieren)
   const [savedLesson, setSavedLesson] = useState(null)
+  const [updatedLesson, setUpdatedLesson] = useState(null)
 
   function handleSlotSelect(slot) {
     setActiveSlot(slot)
@@ -67,6 +67,7 @@ export default function Unterricht() {
             onHasUnitsChange={setHasUnits}
             onSlotSelect={handleSlotSelect}
             savedLesson={savedLesson}
+            updatedLesson={updatedLesson}
           />
 
           {/* Zweispaltig: Arbeitsbereich + Schüler im Fokus */}
@@ -83,6 +84,7 @@ export default function Unterricht() {
                   activeClass={activeClass}
                   slot={activeSlot}
                   onLessonSaved={handleLessonSaved}
+                  onLessonUpdated={setUpdatedLesson}
                   onObservationsSaved={() => setStudentRefresh((n) => n + 1)}
                 />
               )}

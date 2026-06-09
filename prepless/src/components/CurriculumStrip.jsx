@@ -16,8 +16,9 @@ export default function CurriculumStrip({
   onCurrentUnitChange,
   onHasUnitsChange,
   onSlotSelect,
-  // Von außen gespeicherte Stunde → Slot im Tray sofort aktualisieren
   savedLesson = null,
+  // { id, status, conducted_at } – aktualisiert einen Slot-Status ohne Reload
+  updatedLesson = null,
 }) {
   const [units, setUnits] = useState([])
   const [loading, setLoading] = useState(false)
@@ -111,6 +112,24 @@ export default function CurriculumStrip({
     if (!savedLesson?.curriculum_unit_id) return
     markSlotFilled(savedLesson.curriculum_unit_id, savedLesson)
   }, [savedLesson?.id]) // eslint-disable-line
+
+  // Extern geänderter Status sofort im Tray aktualisieren
+  useEffect(() => {
+    if (!updatedLesson?.id) return
+    setLessonsByUnit((prev) => {
+      const next = { ...prev }
+      for (const [unitId, lessons] of Object.entries(next)) {
+        const idx = lessons.findIndex((l) => l.id === updatedLesson.id)
+        if (idx !== -1) {
+          const updated = [...lessons]
+          updated[idx] = { ...updated[idx], ...updatedLesson }
+          next[unitId] = updated
+          break
+        }
+      }
+      return next
+    })
+  }, [updatedLesson?.id, updatedLesson?.status]) // eslint-disable-line
 
   // hasUnits nach oben melden
   useEffect(() => {
@@ -236,33 +255,36 @@ export default function CurriculumStrip({
                   </span>
                 </div>
                 <div className="slot-list">
-                  {slots.map(({ index, lesson }) => (
-                    <button
-                      key={index}
-                      type="button"
-                      className={[
-                        'slot',
-                        lesson ? 'slot-filled' : 'slot-empty',
-                        isActive(index) ? 'slot-active' : '',
-                      ].join(' ')}
-                      onClick={() => handleSlotClick(unit, index)}
-                      title={lesson ? 'Stunde öffnen' : 'Stunde planen'}
-                    >
-                      {lesson ? (
-                        <>
-                          <span className="slot-check" aria-hidden="true">✓</span>
-                          <span className="slot-label">{lesson.title}</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="slot-plus" aria-hidden="true">+</span>
-                          <span className="slot-label slot-placeholder">
-                            Stunde {index + 1}
-                          </span>
-                        </>
-                      )}
-                    </button>
-                  ))}
+                  {slots.map(({ index, lesson }) => {
+                    const status = lesson?.status ?? null
+                    const slotClass = lesson
+                      ? status === 'conducted' ? 'slot-conducted' : 'slot-planned'
+                      : 'slot-empty'
+                    const tooltipText = lesson
+                      ? status === 'conducted' ? 'Durchgeführt – öffnen' : 'Geplant – öffnen'
+                      : 'Stunde planen'
+                    const icon = lesson
+                      ? status === 'conducted' ? '✓' : '📝'
+                      : '+'
+                    return (
+                      <button
+                        key={index}
+                        type="button"
+                        className={[
+                          'slot',
+                          slotClass,
+                          isActive(index) ? 'slot-active' : '',
+                        ].join(' ')}
+                        onClick={() => handleSlotClick(unit, index)}
+                        title={tooltipText}
+                      >
+                        <span className="slot-icon" aria-hidden="true">{icon}</span>
+                        <span className="slot-label">
+                          {lesson ? lesson.title : `Stunde ${index + 1}`}
+                        </span>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             )

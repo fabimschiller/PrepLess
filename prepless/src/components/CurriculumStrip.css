@@ -186,42 +186,52 @@
   color: var(--text-h);
 }
 
-.slot-empty:hover .slot-plus {
+.slot-empty:hover .slot-icon {
   color: var(--accent);
 }
 
-.slot-plus {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-muted);
-  transition: color 0.15s ease;
-  flex: 0 0 auto;
-}
-
-/* ── Gefüllter Slot ── */
-.slot-filled {
-  border: 1.5px solid var(--success);
-  background: var(--surface);
+/* ── Geplant (amber) ── */
+.slot-planned {
+  border: 1.5px solid #d97706;
+  background: #fffbeb;
   color: var(--text-h);
   font-weight: 500;
 }
 
-.slot-filled:hover {
-  background: var(--success-bg);
-  box-shadow: 0 2px 8px rgba(31, 138, 62, 0.12);
+.slot-planned .slot-icon {
+  font-size: 13px;
 }
 
-.slot-check {
+.slot-planned:hover {
+  background: #fef3c7;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.15);
+}
+
+/* ── Durchgeführt (grün) ── */
+.slot-conducted {
+  border: 1.5px solid var(--success);
+  background: var(--success-bg);
+  color: var(--text-h);
+  font-weight: 500;
+}
+
+.slot-conducted .slot-icon {
   color: var(--success);
   font-size: 13px;
   font-weight: 700;
+}
+
+.slot-conducted:hover {
+  background: #d1fae5;
+  box-shadow: 0 2px 8px rgba(31, 138, 62, 0.12);
+}
+
+/* Gemeinsames Icon */
+.slot-icon {
   flex: 0 0 auto;
+  font-size: 13px;
+  color: var(--text-muted);
+  transition: color 0.15s ease;
 }
 
 /* ── Aktiver Slot ── */
@@ -232,8 +242,7 @@
   color: var(--text-h) !important;
 }
 
-.slot-active .slot-plus,
-.slot-active .slot-check {
+.slot-active .slot-icon {
   color: var(--accent);
 }
 
