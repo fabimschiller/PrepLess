@@ -295,9 +295,15 @@
 /* .slot-active ist jetzt auf .slot-wrap.slot-active definiert (siehe oben) */
 
 .slot-label {
+  display: block;
+  font-size: 10px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
+  margin-top: 2px;
+  line-height: 1.2;
+  color: var(--text-h);
 }
 
 .slot-placeholder {

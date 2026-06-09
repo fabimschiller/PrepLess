@@ -374,16 +374,20 @@ export default function CurriculumStrip({
                         ].join(' ')}
                       >
                         <button
-                          type="button"
-                          className={['slot', slotClass].join(' ')}
-                          onClick={() => handleSlotClick(unit, index)}
-                          title={slotTooltip}
-                        >
-                          <span className="slot-icon" aria-hidden="true">{icon}</span>
-                          <span className="slot-label">
-                            {lesson ? lesson.title : `Stunde ${index + 1}`}
-                          </span>
-                        </button>
+                           type="button"
+                           className={['slot', slotClass].join(' ')}
+                           onClick={() => handleSlotClick(unit, index)}
+                           title={lesson ? lesson.title : slotTooltip}
+                         >
+                           <span className="slot-icon" aria-hidden="true">{icon}</span>
+                           {lesson && (
+                             <span className="slot-label" title={lesson.title}>
+                               {lesson.title.length > 25 
+                                 ? lesson.title.substring(0, 25) + '...' 
+                                 : lesson.title}
+                             </span>
+                           )}
+                         </button>
 
                         {/* Checkmark-Badge: nur bei gefüllten Slots */}
                         {lesson && (
