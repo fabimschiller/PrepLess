@@ -5,6 +5,7 @@ import './LessonGenerator.css'
 export default function LessonGenerator({
   activeClass,
   currentUnit,
+  hasUnits,
   onObservationsSaved,
 }) {
   const [topic, setTopic] = useState('')
@@ -329,7 +330,7 @@ export default function LessonGenerator({
             placeholder="z.B. Lineare Funktionen – Steigung"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            disabled={generating}
+            disabled={generating || !hasUnits}
           />
           {currentUnit && topic === topicSuggestion && (
             <span className="generate-hint">
@@ -337,14 +338,19 @@ export default function LessonGenerator({
             </span>
           )}
         </div>
-        <button
-          className="btn-primary generate-btn"
-          type="button"
-          onClick={handleGenerate}
-          disabled={generating || !topic.trim()}
+        <div
+          title={!hasUnits ? 'Erst Lehrplan erzeugen' : undefined}
+          className="generate-btn-wrapper"
         >
-          {generating ? 'Generiert…' : 'Stunde generieren'}
-        </button>
+          <button
+            className="btn-primary generate-btn"
+            type="button"
+            onClick={handleGenerate}
+            disabled={generating || !topic.trim() || !hasUnits}
+          >
+            {generating ? 'Generiert…' : 'Stunde generieren'}
+          </button>
+        </div>
       </div>
 
       {generationError && (

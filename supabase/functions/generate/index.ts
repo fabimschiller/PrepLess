@@ -71,6 +71,9 @@ interface GenerateRequest {
   previousLessons?: string[] | string;
   curriculumUnitTitle?: string;
   curriculumUnitDescription?: string;
+  // Refinement: wenn beide gesetzt → Multi-Turn Konversation
+  previousContent?: string;
+  refinementRequest?: string;
 }
 
 function formatPreviousLessons(input: GenerateRequest["previousLessons"]): string {
@@ -161,6 +164,19 @@ Deno.serve(async (req: Request) => {
   }
 
   const userPrompt = buildUserPrompt(body);
+  const isRefinement =
+    typeof body.previousContent === "string" &&
+    body.previousContent.trim().length > 0 &&
+    typeof body.refinementRequest === "string" &&
+    body.refinementRequest.trim().length > 0;
+
+  const messages = isRefinement
+    ? [
+        { role: "user", content: userPrompt },
+        { role: "assistant", content: body.previousContent!.trim() },
+        { role: "user", content: body.refinementRequest!.trim() },
+      ]
+    : [{ role: "user", content: userPrompt }];
 
   const anthropicRes = await fetch(ANTHROPIC_API_URL, {
     method: "POST",
@@ -174,12 +190,7 @@ Deno.serve(async (req: Request) => {
       max_tokens: MAX_TOKENS,
       stream: true,
       system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: userPrompt,
-        },
-      ],
+      messages,
     }),
   });
 

@@ -15,13 +15,17 @@ export default function Verwaltung() {
   const [tab, setTab] = useState('classes')
   const { activeClass } = useClasses()
 
+  const noClassHint = tab !== 'classes' && !activeClass
+
   return (
     <div className="verwaltung-page">
       <header className="page-header">
         <div>
           <h1>Verwaltung</h1>
           <p className="page-subtitle">
-            Klassen, Schüler und Lehrpläne verwalten.
+            {activeClass
+              ? `Aktive Klasse: ${activeClass.name} · ${activeClass.subject} · Jg. ${activeClass.grade}`
+              : 'Klassen, Schüler und Lehrpläne verwalten.'}
           </p>
         </div>
       </header>
@@ -41,9 +45,19 @@ export default function Verwaltung() {
       </div>
 
       <div className="tab-panel">
-        {tab === 'classes' && <ClassesAdmin />}
-        {tab === 'students' && <StudentsAdmin activeClass={activeClass} />}
-        {tab === 'curriculum' && <CurriculumAdmin activeClass={activeClass} />}
+        {noClassHint ? (
+          <div className="card">
+            <p className="empty-state">
+              Bitte erst eine Klasse in der Sidebar auswählen.
+            </p>
+          </div>
+        ) : (
+          <>
+            {tab === 'classes' && <ClassesAdmin />}
+            {tab === 'students' && <StudentsAdmin />}
+            {tab === 'curriculum' && <CurriculumAdmin />}
+          </>
+        )}
       </div>
     </div>
   )

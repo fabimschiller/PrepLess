@@ -25,6 +25,126 @@
   font-weight: 500;
 }
 
+.strip-empty {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+}
+
+.strip-empty .empty-state {
+  margin: 0;
+  padding: 0;
+}
+
+/* Strip-Items sind jetzt Buttons */
+.strip-item-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: var(--sans);
+  width: 100%;
+}
+
+.strip-item.expanded .strip-dot {
+  box-shadow: 0 0 0 5px rgba(170, 59, 255, 0.18);
+}
+
+/* ── Slot-Tray ── */
+.slot-tray {
+  border-top: 1px solid var(--border);
+  padding: 14px 0 4px 0;
+  margin-top: 10px;
+}
+
+.slot-tray-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.slot-tray-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.slot-tray-meta {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.slot-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.slot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: var(--sans);
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+  min-width: 110px;
+  max-width: 200px;
+}
+
+.slot-empty {
+  border: 1.5px dashed var(--border-strong);
+  background: var(--surface);
+  color: var(--text-muted);
+}
+
+.slot-empty:hover {
+  border-color: var(--accent);
+  color: var(--text-h);
+}
+
+.slot-filled {
+  border: 1.5px solid var(--success);
+  background: var(--success-bg);
+  color: var(--text-h);
+  font-weight: 500;
+}
+
+.slot-active {
+  border-color: var(--accent) !important;
+  background: rgba(170, 59, 255, 0.08) !important;
+  box-shadow: 0 0 0 3px rgba(170, 59, 255, 0.15);
+  color: var(--text-h) !important;
+}
+
+.slot-check {
+  color: var(--success);
+  font-size: 12px;
+  flex: 0 0 auto;
+}
+
+.slot-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slot-placeholder {
+  color: var(--text-muted);
+}
+
 .strip-scroll {
   overflow-x: auto;
   margin: 0 -8px;

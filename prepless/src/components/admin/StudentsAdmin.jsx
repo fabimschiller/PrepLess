@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { useClasses } from '../../context/ClassesContext'
 import './AdminTables.css'
 
-export default function StudentsAdmin({ activeClass }) {
+export default function StudentsAdmin() {
+  const { activeClass } = useClasses()
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -117,7 +119,7 @@ export default function StudentsAdmin({ activeClass }) {
     return (
       <div className="card">
         <p className="empty-state">
-          Bitte in der Topbar (Seite „Unterricht") eine Klasse aktiv setzen.
+          Bitte erst eine Klasse in der Sidebar auswählen.
         </p>
       </div>
     )

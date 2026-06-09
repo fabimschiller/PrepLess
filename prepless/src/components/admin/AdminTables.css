@@ -98,6 +98,19 @@
   color: var(--text-muted);
 }
 
+.curriculum-empty {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 8px 0 4px 0;
+}
+
+.curriculum-empty .empty-state {
+  margin: 0;
+  padding: 0;
+}
+
 .loading-indicator {
   display: flex;
   align-items: center;

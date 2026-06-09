@@ -31,6 +31,10 @@
   margin-top: 4px;
 }
 
+.generate-btn-wrapper {
+  display: contents; /* kein extra Box-Modell, Button verhält sich normal */
+}
+
 .generate-btn {
   margin-top: 0;
   white-space: nowrap;
