@@ -71,13 +71,11 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   const [refinement, setRefinement] = useState('')
   const [refining, setRefining] = useState(false)
   const [topicSuggesting, setTopicSuggesting] = useState(false)
+  const [students, setStudents] = useState([])
+  const [topicSuggestions, setTopicSuggestions] = useState([])
+  const [aiSuggestions, setAiSuggestions] = useState([])
 
   const abortRef = useRef(null)
-
-  // Debug: savedLessonId tracking
-  useEffect(() => {
-    console.log('[LessonWorkspace] savedLessonId changed:', savedLessonId)
-  }, [savedLessonId])
 
   // Debug: aiSuggestions tracking
   useEffect(() => {
@@ -85,7 +83,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   }, [aiSuggestions])
 
   // Für den Generate-Payload: Schüler + letzte Beobachtungen
-  const [students, setStudents] = useState([])
   useEffect(() => {
     if (!activeClass?.id) { setStudents([]); return }
     supabase
@@ -97,7 +94,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   }, [activeClass?.id])
 
   // Curriculum Units für Topic-Datalist laden
-  const [topicSuggestions, setTopicSuggestions] = useState([])
   useEffect(() => {
     if (!activeClass?.id) { setTopicSuggestions([]); return }
     supabase
@@ -116,9 +112,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
         setTopicSuggestions(suggestions)
       })
   }, [activeClass?.id])
-
-  // KI-generierte Vorschläge für leere Slots
-  const [aiSuggestions, setAiSuggestions] = useState([])
 
   // Klassenwechsel: Content sofort löschen damit kein alter Inhalt sichtbar bleibt
   useEffect(() => {
