@@ -40,6 +40,8 @@ WICHTIG: Antworte NUR mit dem JSON-Array, ohne Markdown-Codeblöcke, ohne Erklä
 interface GenerateCurriculumRequest {
   classId?: string;
   subject?: string;
+  subjects?: string[];
+  school_type?: string;
   grade?: string;
   state?: string;
 }
@@ -52,15 +54,38 @@ interface CurriculumUnit {
   end_month: number;
 }
 
-function buildUserPrompt(body: Required<GenerateCurriculumRequest>): string {
-  return [
+function buildUserPrompt(body: GenerateCurriculumRequest): string {
+  const schoolType = body.school_type ?? "";
+  const subjects = body.subjects?.length
+    ? body.subjects
+    : body.subject
+    ? [body.subject]
+    : [];
+
+  const lines = [
     `Bitte erstelle einen vollständigen Jahres-Lehrplan für folgende Klasse:`,
-    `- Fach: ${body.subject}`,
     `- Jahrgangsstufe: ${body.grade}`,
     `- Bundesland: ${body.state}`,
+  ];
+
+  if (schoolType) {
+    lines.push(`- Schultyp: ${schoolType}`);
+    lines.push(
+      `  Beachte die spezifischen Lehrplanvorgaben für diesen Schultyp in Bayern.`
+    );
+    lines.push(`  Erstelle den Lehrplan passend für ${schoolType}-Niveau.`);
+  }
+
+  if (subjects.length > 0) {
+    lines.push(`- Fächer dieser Klasse: ${subjects.join(", ")}`);
+  }
+
+  lines.push(
     ``,
-    `Berücksichtige die offiziellen Lehrplanvorgaben des Bundeslandes. Gib die Einheiten in chronologisch sinnvoller Reihenfolge zurück, sodass sie das gesamte Schuljahr (September bis Juli) abdecken.`,
-  ].join("\n");
+    `Berücksichtige die offiziellen Lehrplanvorgaben des Bundeslandes. Gib die Einheiten in chronologisch sinnvoller Reihenfolge zurück, sodass sie das gesamte Schuljahr (September bis Juli) abdecken.`
+  );
+
+  return lines.join("\n");
 }
 
 function jsonResponse(status: number, payload: unknown): Response {
@@ -182,12 +207,9 @@ Deno.serve(async (req: Request) => {
     return jsonError(400, "Ungültiger JSON-Body.");
   }
 
-  const { classId, subject, grade, state } = body;
-  if (!classId || !subject || !grade || !state) {
-    return jsonError(
-      400,
-      "classId, subject, grade und state sind erforderlich.",
-    );
+  const { classId, grade, state } = body;
+  if (!classId || !grade || !state) {
+    return jsonError(400, "classId, grade und state sind erforderlich.");
   }
 
   // Anthropic aufrufen (kein Streaming – wir wollen das vollständige JSON)

@@ -22,6 +22,8 @@ export async function generateCurriculumForClass(cls) {
     body: JSON.stringify({
       classId: cls.id,
       subject: cls.subject,
+      subjects: cls.subjects ?? [],
+      school_type: cls.school_type ?? '',
       grade: cls.grade,
       state: cls.state,
     }),

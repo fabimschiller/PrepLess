@@ -129,6 +129,15 @@
   opacity: 0.8;
 }
 
+.sidebar-class-subjects {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.65;
+}
+
 /* Trennlinien */
 .sidebar-divider {
   border: none;

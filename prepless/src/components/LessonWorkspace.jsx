@@ -162,7 +162,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       },
       body: JSON.stringify({
         className: activeClass.name,
-        subject: activeClass.subject,
+        subject: (activeClass.subjects ?? []).join(', ') || activeClass.subject,
+        school_type: activeClass.school_type ?? '',
         grade: activeClass.grade,
         state: activeClass.state,
         studentNames,

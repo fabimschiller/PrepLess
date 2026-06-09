@@ -58,8 +58,17 @@ export default function AppLayout({ user }) {
                       <span className="sidebar-class-label">
                         <span className="sidebar-class-name">{cls.name}</span>
                         <span className="sidebar-class-meta">
-                          {cls.subject} · Jg.&nbsp;{cls.grade}
+                          {cls.school_type
+                            ? `${cls.school_type} · Jg. ${cls.grade}`
+                            : `Jg. ${cls.grade}`}
                         </span>
+                        {(cls.subjects?.length > 0 || cls.subject) && (
+                          <span className="sidebar-class-subjects">
+                            {cls.subjects?.length > 0
+                              ? cls.subjects.join(', ')
+                              : cls.subject}
+                          </span>
+                        )}
                       </span>
                     </button>
                   </li>

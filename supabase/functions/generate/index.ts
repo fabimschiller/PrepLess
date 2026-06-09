@@ -64,6 +64,7 @@ interface GenerateRequest {
   subject?: string;
   grade?: string;
   state?: string;
+  school_type?: string;
   studentNames?: string[];
   studentNotes?: Record<string, string>;
   topic?: string;
@@ -110,9 +111,16 @@ function buildUserPrompt(body: GenerateRequest): string {
     .map(([name, notiz]) => `${name}: ${notiz}`)
     .join("\n");
 
+  const schoolType = (body.school_type ?? "").trim();
+
   const lines = [
     `Klasse: ${className}, ${subject}, ${state} (Lehrplan beachten)`,
     `Jahrgang: ${grade}`,
+    ...(schoolType
+      ? [
+          `Schultyp: ${schoolType}. Passe Niveau, Methodik und Sprache entsprechend an.`,
+        ]
+      : []),
     `Thema: ${topic}`,
   ];
 
