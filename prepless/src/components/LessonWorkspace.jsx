@@ -311,6 +311,25 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
             Abbrechen
           </button>
         )}
+        {hasContent && !isStreaming && (
+          <button
+            className="btn-primary"
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? 'Speichert…' : '💾 Stunde speichern'}
+          </button>
+        )}
+        {hasContent && !isStreaming && (
+          <button
+            className="btn-secondary"
+            type="button"
+            onClick={() => window.print()}
+          >
+            🖨 Drucken
+          </button>
+        )}
       </div>
 
       {genError && <div className="alert error">{genError}</div>}

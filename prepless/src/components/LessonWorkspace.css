@@ -150,6 +150,28 @@
 }
 
 /* Beobachtungsformular */
+@media print {
+  .sidebar,
+  .curriculum-strip,
+  .workspace-actions,
+  .workspace-refine,
+  .workspace-save-row,
+  nav {
+    display: none !important;
+  }
+
+  .workspace-content {
+    font-size: 12pt;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    font-family: Georgia, serif;
+  }
+
+  .workspace-header {
+    margin-bottom: 20pt;
+  }
+}
+
 .obs-form {
   border-top: 1px solid var(--border);
   padding-top: 16px;
