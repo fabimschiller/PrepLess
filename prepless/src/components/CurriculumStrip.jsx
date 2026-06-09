@@ -145,9 +145,6 @@ export default function CurriculumStrip({
     <section className="curriculum-strip">
       <div className="curriculum-strip-head">
         <h3>Lehrplan</h3>
-        {currentUnit && (
-          <span className="curriculum-strip-current">Aktuell: {currentUnit.title}</span>
-        )}
       </div>
 
       {loading && <p className="empty-state">Lädt…</p>}

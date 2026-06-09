@@ -293,9 +293,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onOb
     if (!content.trim() || !activeClass || !slot) return
     setSaving(true); setSaveError(null); setSaveSuccess(null)
 
-    const { data: sessionData } = await supabase.auth.getSession()
-    const userId = sessionData?.session?.user?.id
-
     const { data: lesson, error: insErr } = await supabase
       .from('lessons')
       .upsert({
@@ -305,7 +302,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onOb
         position: slot.slotIndex + 1,
         title: topic.trim() || `Stunde ${slot.slotIndex + 1}`,
         content: content.trim(),
-        ...(userId ? { user_id: userId } : {}),
       }, { onConflict: 'id' })
       .select()
       .single()
