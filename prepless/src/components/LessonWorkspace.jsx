@@ -90,6 +90,27 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       .then(({ data }) => setStudents(data ?? []))
   }, [activeClass?.id])
 
+  // Curriculum Units für Topic-Datalist laden
+  const [topicSuggestions, setTopicSuggestions] = useState([])
+  useEffect(() => {
+    if (!activeClass?.id) { setTopicSuggestions([]); return }
+    supabase
+      .from('curriculum_units')
+      .select('id, title, estimated_hours')
+      .eq('class_id', activeClass.id)
+      .order('position', { ascending: true })
+      .then(({ data: units }) => {
+        if (!units) return
+        const suggestions = []
+        for (const unit of units) {
+          for (let i = 1; i <= unit.estimated_hours; i++) {
+            suggestions.push(`${unit.title} – Stunde ${i} von ${unit.estimated_hours}`)
+          }
+        }
+        setTopicSuggestions(suggestions)
+      })
+  }, [activeClass?.id])
+
   // Klassenwechsel: Content sofort löschen damit kein alter Inhalt sichtbar bleibt
   useEffect(() => {
     setContent('')
@@ -462,7 +483,15 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           disabled={isStreaming}
+          list={!savedLessonId ? 'ws-topic-suggestions' : undefined}
         />
+        {!savedLessonId && topicSuggestions.length > 0 && (
+          <datalist id="ws-topic-suggestions">
+            {topicSuggestions.map((suggestion, idx) => (
+              <option key={idx} value={suggestion} />
+            ))}
+          </datalist>
+        )}
       </div>
 
       <div className="workspace-actions">
