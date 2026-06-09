@@ -1,0 +1,41 @@
+.unterricht-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1280px;
+}
+
+.unterricht-topbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.unterricht-topbar h1 {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.unterricht-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 65fr) minmax(0, 35fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.unterricht-main {
+  min-width: 0;
+}
+
+.unterricht-side {
+  min-width: 0;
+}
+
+@media (max-width: 1000px) {
+  .unterricht-grid {
+    grid-template-columns: 1fr;
+  }
+}

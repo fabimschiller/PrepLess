@@ -7,7 +7,11 @@ import {
   useLocation,
 } from 'react-router-dom'
 import { supabase } from './lib/supabase'
-import Dashboard from './pages/Dashboard'
+import { ClassesProvider } from './context/ClassesContext'
+import AppLayout from './components/AppLayout'
+import Unterricht from './pages/Unterricht'
+import Verwaltung from './pages/Verwaltung'
+import Karriere from './pages/Karriere'
 import Login from './pages/Login'
 
 export default function App() {
@@ -17,14 +21,12 @@ export default function App() {
   useEffect(() => {
     let mounted = true
 
-    // Initiale Session prüfen
     supabase.auth.getSession().then(({ data }) => {
       if (!mounted) return
       setSession(data.session)
       setLoading(false)
     })
 
-    // Reaktiv auf Login/Logout reagieren
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
@@ -46,19 +48,24 @@ export default function App() {
       <Routes>
         <Route
           path="/login"
-          element={
-            session ? <Navigate to="/" replace /> : <Login />
-          }
+          element={session ? <Navigate to="/unterricht" replace /> : <Login />}
         />
+
         <Route
-          path="/"
           element={
             <RequireAuth session={session}>
-              <Dashboard />
+              <ClassesProvider>
+                <AppLayout user={session?.user} />
+              </ClassesProvider>
             </RequireAuth>
           }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        >
+          <Route path="/" element={<Navigate to="/unterricht" replace />} />
+          <Route path="/unterricht" element={<Unterricht />} />
+          <Route path="/verwaltung" element={<Verwaltung />} />
+          <Route path="/karriere" element={<Karriere />} />
+          <Route path="*" element={<Navigate to="/unterricht" replace />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   )

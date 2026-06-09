@@ -1,0 +1,125 @@
+.lesson-generator {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lesson-generator .card-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.lesson-generator .card-row .card-subtitle {
+  margin-bottom: 0;
+}
+
+.generate-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.generate-topic {
+  flex: 1;
+}
+
+.generate-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.generate-btn {
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .generate-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.lesson-output {
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  padding: 16px;
+  min-height: 80px;
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.lesson-content {
+  font-family: var(--sans);
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--text-h);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+.caret {
+  display: inline-block;
+  margin-left: 2px;
+  color: var(--accent);
+  animation: blink 1s steps(2, start) infinite;
+}
+
+@keyframes blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+.observations-form {
+  margin-top: 16px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.observations-form h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: var(--text-h);
+}
+
+.observation-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.observations-form .btn-primary {
+  align-self: flex-start;
+}

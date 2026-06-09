@@ -1,0 +1,92 @@
+.student-focus {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.focus-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.focus-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--sans);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.focus-item:hover {
+  border-color: var(--border-strong);
+  background: var(--bg);
+}
+
+.focus-dot {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  margin-top: 5px;
+  background: var(--border-strong);
+}
+
+.focus-dot.status-red {
+  background: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-bg);
+}
+
+.focus-dot.status-yellow {
+  background: #d99b1f;
+  box-shadow: 0 0 0 3px rgba(217, 155, 31, 0.18);
+}
+
+.focus-dot.status-green {
+  background: var(--success);
+  box-shadow: 0 0 0 3px var(--success-bg);
+}
+
+.focus-dot.status-neutral {
+  background: var(--border-strong);
+}
+
+.focus-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.focus-name {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.focus-note {
+  font-size: 13px;
+  color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.focus-empty {
+  font-style: italic;
+  color: var(--text-muted);
+}

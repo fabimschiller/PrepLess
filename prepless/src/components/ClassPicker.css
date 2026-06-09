@@ -1,0 +1,112 @@
+.class-picker {
+  position: relative;
+  min-width: 240px;
+}
+
+.class-picker-loading,
+.class-picker-empty {
+  font-size: 14px;
+  color: var(--text-muted);
+  padding: 10px 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.class-picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  font-family: var(--sans);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.class-picker.open .class-picker-trigger,
+.class-picker-trigger:hover {
+  border-color: var(--accent);
+}
+
+.class-picker.open .class-picker-trigger {
+  box-shadow: 0 0 0 3px rgba(170, 59, 255, 0.15);
+}
+
+.class-picker-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.class-picker-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-h);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.class-picker-meta {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.class-picker-caret {
+  color: var(--text-muted);
+  font-size: 14px;
+  flex: 0 0 auto;
+}
+
+.class-picker-list {
+  list-style: none;
+  margin: 6px 0 0 0;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.class-picker-option {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--sans);
+  transition: background-color 0.12s ease;
+}
+
+.class-picker-option:hover {
+  background: var(--bg);
+}
+
+.class-picker-option.active {
+  background: rgba(170, 59, 255, 0.08);
+}
+
+.class-picker-option.active .class-picker-name {
+  color: var(--accent);
+}

@@ -1,0 +1,36 @@
+.karriere-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100svh - 56px);
+}
+
+.karriere-card {
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 56px 48px;
+  box-shadow: var(--shadow);
+  max-width: 460px;
+}
+
+.karriere-logo {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+.karriere-page h1 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.karriere-text {
+  font-size: 15px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
