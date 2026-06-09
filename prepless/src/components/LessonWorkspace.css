@@ -189,44 +189,48 @@
   gap: 12px;
 }
 
-/* Suggestions Dropdown */
-.suggestions-dropdown {
-  margin-top: 8px;
-  padding: 10px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+/* Suggestion Chips */
+.suggestions-section {
+  margin-top: 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
-.suggestions-label {
+.suggestions-hint {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
-.suggestion-btn {
-  padding: 8px 12px;
-  background: none;
+.suggestions-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.suggestion-chip {
+  padding: 6px 12px;
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 20px;
   color: var(--text-h);
   font-size: 13px;
   cursor: pointer;
-  text-align: left;
   transition: all 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
 }
 
-.suggestion-btn:hover {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
+.suggestion-chip:hover {
+  background: #e3f2fd;
+  border-color: #1976d2;
+  color: #1976d2;
 }
 
-.suggestion-btn:active {
-  transform: scale(0.98);
+.suggestion-chip:active {
+  transform: scale(0.96);
 }

@@ -275,18 +275,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       }
 
       const result = await response.json()
-      console.log('suggestions received:', result.suggestions)
-      console.log('result object:', result)
       if (result.suggestions && Array.isArray(result.suggestions)) {
-        console.log('Setting aiSuggestions:', result.suggestions)
         setAiSuggestions(result.suggestions)
-        // Setze den ersten Vorschlag automatisch
-        if (result.suggestions.length > 0) {
-          console.log('Setting topic to first suggestion:', result.suggestions[0])
-          setTopic(result.suggestions[0])
-        }
-      } else {
-        console.log('result.suggestions is not an array or is missing')
       }
     } catch (err) {
       console.error('suggestTopic error:', err)
@@ -552,39 +542,32 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
         <input
           id="ws-topic"
           type="text"
-          placeholder={topicSuggesting ? "Thema wird vorgeschlagen..." : "z.B. Lineare Funktionen – Steigung erarbeiten"}
+          placeholder="z.B. Lineare Funktionen – Steigung erarbeiten"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
-          disabled={isStreaming || topicSuggesting}
-          list={!savedLessonId ? 'ws-topic-suggestions' : undefined}
+          disabled={isStreaming}
           autoComplete="off"
         />
-        {!savedLessonId && (aiSuggestions.length > 0 || topicSuggestions.length > 0) && (
-          <datalist id="ws-topic-suggestions">
-            {/* KI-generierte Vorschläge zuerst */}
-            {aiSuggestions.map((suggestion, idx) => (
-              <option key={`ai-${idx}`} value={suggestion} />
-            ))}
-            {/* Dann Curriculum Unit Vorschläge */}
-            {topicSuggestions.map((suggestion, idx) => (
-              <option key={`unit-${idx}`} value={suggestion} />
-            ))}
-          </datalist>
-        )}
-        {/* Simple Dropdown für KI-Vorschläge */}
-        {!savedLessonId && aiSuggestions.length > 0 && (
-          <div className="suggestions-dropdown">
-            <div className="suggestions-label">Vorschläge:</div>
-            {aiSuggestions.map((suggestion, idx) => (
-              <button
-                key={`suggest-${idx}`}
-                type="button"
-                className="suggestion-btn"
-                onClick={() => setTopic(suggestion)}
-              >
-                {suggestion}
-              </button>
-            ))}
+        
+        {/* Suggestion Chips */}
+        {!savedLessonId && !content && aiSuggestions.length > 0 && (
+          <div className="suggestions-section">
+            <div className="suggestions-hint">Vorschläge basierend auf deinem Lehrplan:</div>
+            <div className="suggestions-chips">
+              {aiSuggestions.map((suggestion, idx) => (
+                <button
+                  key={`chip-${idx}`}
+                  type="button"
+                  className="suggestion-chip"
+                  onClick={() => {
+                    setTopic(suggestion)
+                    setAiSuggestions([])
+                  }}
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
