@@ -549,7 +549,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
           autoComplete="off"
         />
         
-        {/* Suggestion Chips */}
+        {/* Suggestion Chips - sichtbar wenn: kein saveLessonId, kein content, suggestions vorhanden */}
         {!savedLessonId && !content && aiSuggestions.length > 0 && (
           <div className="suggestions-section">
             <div className="suggestions-hint">Vorschläge basierend auf deinem Lehrplan:</div>
@@ -559,10 +559,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
                   key={`chip-${idx}`}
                   type="button"
                   className="suggestion-chip"
-                  onClick={() => {
-                    setTopic(suggestion)
-                    setAiSuggestions([])
-                  }}
+                  onClick={() => setTopic(suggestion)}
                 >
                   {suggestion}
                 </button>
