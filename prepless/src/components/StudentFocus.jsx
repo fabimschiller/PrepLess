@@ -188,7 +188,8 @@ function AddObservationForm({ student, onSaved, onCancel }) {
 
 export default function StudentFocus({ classId, refreshKey = 0 }) {
   const [students, setStudents] = useState([])
-  const [latestByStudent, setLatestByStudent] = useState({})
+  const [latestByStudent, setLatestByStudent] = useState({})  // { [id]: { note, created_at } }
+  const [countByStudent, setCountByStudent] = useState({})    // { [id]: number }
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -201,6 +202,7 @@ export default function StudentFocus({ classId, refreshKey = 0 }) {
     if (!classId) {
       setStudents([])
       setLatestByStudent({})
+      setCountByStudent({})
       return
     }
 
@@ -241,15 +243,18 @@ export default function StudentFocus({ classId, refreshKey = 0 }) {
         .order('created_at', { ascending: false })
 
       if (cancelled) return
-      const map = {}
+      const latestMap = {}
+      const countMap = {}
       if (obs) {
         for (const o of obs) {
-          if (!map[o.student_id]) {
-            map[o.student_id] = { note: o.note, created_at: o.created_at }
+          if (!latestMap[o.student_id]) {
+            latestMap[o.student_id] = { note: o.note, created_at: o.created_at }
           }
+          countMap[o.student_id] = (countMap[o.student_id] ?? 0) + 1
         }
       }
-      setLatestByStudent(map)
+      setLatestByStudent(latestMap)
+      setCountByStudent(countMap)
       setLoading(false)
     })()
 
@@ -261,21 +266,26 @@ export default function StudentFocus({ classId, refreshKey = 0 }) {
       .map((s) => {
         const latest = latestByStudent[s.id]
         const text = latest?.note ?? s.notes ?? ''
+        const count = countByStudent[s.id] ?? 0
         const status = statusFromObservation(text)
-        return { ...s, latestText: text, latestAt: latest?.created_at, status }
+        return { ...s, latestText: text, latestAt: latest?.created_at, count, status }
       })
       .sort((a, b) => {
-        const d = (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9)
-        if (d !== 0) return d
+        // Primär: Anzahl absteigend (Schüler ohne Beobachtungen ans Ende)
+        if (b.count !== a.count) return b.count - a.count
+        // Sekundär: alphabetisch
         return a.name.localeCompare(b.name, 'de')
       })
-  }, [students, latestByStudent])
+  }, [students, latestByStudent, countByStudent])
 
   function handleObservationSaved(student, data) {
-    // Letzte Beobachtung des Schülers lokal aktualisieren
     setLatestByStudent((prev) => ({
       ...prev,
       [student.id]: { note: data.note, created_at: data.created_at },
+    }))
+    setCountByStudent((prev) => ({
+      ...prev,
+      [student.id]: (prev[student.id] ?? 0) + 1,
     }))
     setAddOpen(null)
   }
@@ -294,9 +304,9 @@ export default function StudentFocus({ classId, refreshKey = 0 }) {
 
   return (
     <section className="student-focus card">
-      <h2>Schüler im Fokus</h2>
+      <h2>Schülerbeobachtungen</h2>
       <p className="card-subtitle">
-        Sortiert nach Förderbedarf.
+        Sortiert nach Anzahl der Beobachtungen.
       </p>
 
       {loading && <p className="empty-state">Lädt…</p>}
@@ -317,11 +327,17 @@ export default function StudentFocus({ classId, refreshKey = 0 }) {
                   aria-label={STATUS_LABEL[s.status]}
                 />
                 <span className="focus-body">
-                  <span className="focus-name">{s.name}</span>
+                  <span className="focus-name">
+                    {s.name}
+                    {' '}
+                    <span className={`focus-count ${s.count === 0 ? 'focus-count-zero' : ''}`}>
+                      ({s.count})
+                    </span>
+                  </span>
                   <span className="focus-note">
                     {s.latestText
                       ? s.latestText
-                      : <em className="focus-empty">Noch keine Beobachtung</em>}
+                      : <em className="focus-empty">Noch keine Beobachtungen</em>}
                   </span>
                 </span>
 
