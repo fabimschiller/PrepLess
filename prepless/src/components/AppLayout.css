@@ -25,6 +25,16 @@
   color: var(--text-h);
   padding: 4px 8px;
   margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sidebar-tagline {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--text-muted);
 }
 
 /* Klassen-Sektion */

@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useClasses } from '../context/ClassesContext'
 import './AppLayout.css'
@@ -14,15 +14,20 @@ const DOT_COLORS = ['#aa3bff', '#2563eb', '#16a34a', '#d99b1f', '#d12d2d']
 
 export default function AppLayout({ user }) {
   const { classes, activeClassId, setActiveClassId, loading } = useClasses()
+  const navigate = useNavigate()
 
   async function handleLogout() {
     await supabase.auth.signOut()
+    navigate('/login', { replace: true })
   }
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="sidebar-brand">PrepLess</div>
+        <div className="sidebar-brand">
+          PrepLess
+          <span className="sidebar-tagline">Prepare Less. Teach More.</span>
+        </div>
 
         {/* Klassen-Liste */}
         <div className="sidebar-section">
