@@ -27,6 +27,8 @@ export default function CurriculumStrip({
 
   // Aufgeklappte Einheit
   const [expandedUnitId, setExpandedUnitId] = useState(null)
+  // Hat der User selbst schon was angeklickt? Nur dann nicht mehr auto-expand.
+  const [userExpanded, setUserExpanded] = useState(false)
   // Gespeicherte Stunden je Einheit: { [unit_id]: Lesson[] }
   const [lessonsByUnit, setLessonsByUnit] = useState({})
   // Aktiver Slot: { unitId, slotIndex }
@@ -71,7 +73,21 @@ export default function CurriculumStrip({
     const isOpen = expandedUnitId === unit.id
     setExpandedUnitId(isOpen ? null : unit.id)
     if (!isOpen) loadLessonsForUnit(unit.id)
+    setUserExpanded(true)
   }
+
+  // Beim ersten Laden: erste Einheit automatisch aufklappen (oder die "aktuelle")
+  useEffect(() => {
+    if (units.length === 0) return
+    if (userExpanded) return
+    if (expandedUnitId) return
+    const initial = pickCurrentUnit(units) ?? units[0]
+    if (initial) {
+      setExpandedUnitId(initial.id)
+      loadLessonsForUnit(initial.id)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [units])
 
   function handleSlotClick(unit, slotIndex) {
     const lessons = lessonsByUnit[unit.id] ?? []
@@ -174,9 +190,15 @@ export default function CurriculumStrip({
                       className="strip-item-btn"
                       onClick={() => handleUnitClick(u)}
                       aria-expanded={isExpanded}
+                      title={u.title}
                     >
                       <span className="strip-dot"><span className="strip-dot-inner" /></span>
-                      <span className="strip-title">{u.title}</span>
+                      <span className="strip-title-row">
+                        <span className="strip-title">{u.title}</span>
+                        <span className="strip-chevron" aria-hidden="true">
+                          {isExpanded ? '▾' : '▸'}
+                        </span>
+                      </span>
                     </button>
                     <div className="strip-tooltip" role="tooltip">
                       <strong>{u.title}</strong>
@@ -190,6 +212,11 @@ export default function CurriculumStrip({
               })}
             </ol>
           </div>
+
+          {/* Hinweis wenn nichts aufgeklappt */}
+          {!expandedUnitId && (
+            <p className="strip-hint">← Thema auswählen um Stunden zu planen</p>
+          )}
 
           {/* Aufgeklappte Slot-Leiste */}
           {expandedUnitId && (() => {
@@ -222,16 +249,20 @@ export default function CurriculumStrip({
                         isActive(index) ? 'slot-active' : '',
                       ].join(' ')}
                       onClick={() => handleSlotClick(unit, index)}
+                      title={lesson ? 'Stunde öffnen' : 'Stunde planen'}
                     >
                       {lesson ? (
                         <>
-                          <span className="slot-check">✓</span>
-                          <span className="slot-label" title={lesson.title}>{lesson.title}</span>
+                          <span className="slot-check" aria-hidden="true">✓</span>
+                          <span className="slot-label">{lesson.title}</span>
                         </>
                       ) : (
-                        <span className="slot-label slot-placeholder">
-                          Stunde {index + 1}
-                        </span>
+                        <>
+                          <span className="slot-plus" aria-hidden="true">+</span>
+                          <span className="slot-label slot-placeholder">
+                            Stunde {index + 1}
+                          </span>
+                        </>
                       )}
                     </button>
                   ))}
