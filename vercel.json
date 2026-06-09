@@ -1,0 +1,7 @@
+{
+  "buildCommand": "cd prepless && npm install && npm run build",
+  "outputDirectory": "prepless/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
