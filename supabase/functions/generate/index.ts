@@ -185,11 +185,23 @@ Deno.serve(async (req: Request) => {
       ? body.previousLessons.join(", ")
       : body.previousLessons ?? "noch keine";
 
-    const suggestionPrompt = `Schlage drei verschiedene prägnante Titel (je max. 60 Zeichen) für Stunde ${(body.slotIndex ?? 0) + 1} von ${body.estimatedHours ?? 1} der Einheit "${body.curriculumUnitTitle ?? ""}" vor.
+    const suggestionPrompt = `Schlage MINDESTENS DREI verschiedene prägnante Titel für Stunde ${(body.slotIndex ?? 0) + 1} von ${body.estimatedHours ?? 1} der Einheit '${body.curriculumUnitTitle ?? ""}' vor.
 
-Berücksichtige bereits behandelte Stunden: ${previousLessonsText}
+WICHTIG: Du MUSST exakt 3 Titel ausgeben, einen pro Zeile.
 
-Antworte NUR mit drei Titeln, einer pro Zeile, ohne Nummerierung, ohne Erklärung.`;
+Jeder Titel max. 60 Zeichen.
+
+Keine Nummerierung, keine Erklärung, keine leeren Zeilen.
+
+Bereits behandelt: ${previousLessonsText}
+
+Beispiel-Format:
+
+Einführung in lineare Gleichungen
+
+Lösen von Gleichungen mit einer Unbekannten
+
+Anwendungsaufgaben zu linearen Gleichungen`;
 
     const suggestionRes = await fetch(ANTHROPIC_API_URL, {
       method: "POST",
