@@ -21,15 +21,18 @@ export default function Unterricht() {
 
   const [savedLesson, setSavedLesson] = useState(null)
   const [updatedLesson, setUpdatedLesson] = useState(null)
+  const [deletedLessonId, setDeletedLessonId] = useState(null)
 
   const handleSlotSelect = useCallback((slot) => {
     setActiveSlot(slot)
   }, [])
 
-  function handleLessonSaved(lesson) {
+  function handleLessonSaved(lesson, deletedId) {
     // Slot lokal aktualisieren: lesson in den Slot eintragen
-    setSavedLesson(lesson) // CurriculumStrip liest das via ref nicht — stattdessen
-    // geben wir den Slot mit dem gespeicherten Lesson zurück
+    setSavedLesson(lesson)
+    if (deletedId) {
+      setDeletedLessonId(deletedId)
+    }
     setActiveSlot((prev) =>
       prev ? { ...prev, lesson } : prev
     )
@@ -72,15 +75,16 @@ export default function Unterricht() {
       {activeClass && (
         <>
           {/* Horizontale Lehrplan-Leiste mit Slot-Aufklapper */}
-          <CurriculumStrip
-            classId={classId}
-            activeClass={activeClass}
-            onCurrentUnitChange={setCurrentUnit}
-            onHasUnitsChange={setHasUnits}
-            onSlotSelect={handleSlotSelect}
-            savedLesson={savedLesson}
-            updatedLesson={updatedLesson}
-          />
+           <CurriculumStrip
+             classId={classId}
+             activeClass={activeClass}
+             onCurrentUnitChange={setCurrentUnit}
+             onHasUnitsChange={setHasUnits}
+             onSlotSelect={handleSlotSelect}
+             savedLesson={savedLesson}
+             updatedLesson={updatedLesson}
+             deletedLessonId={deletedLessonId}
+           />
 
           {/* Zweispaltig: Arbeitsbereich + Schüler im Fokus */}
           <div className="unterricht-grid">

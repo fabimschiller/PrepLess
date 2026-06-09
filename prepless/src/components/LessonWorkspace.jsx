@@ -73,6 +73,11 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
 
   const abortRef = useRef(null)
 
+  // Debug: savedLessonId tracking
+  useEffect(() => {
+    console.log('[LessonWorkspace] savedLessonId changed:', savedLessonId)
+  }, [savedLessonId])
+
   // Für den Generate-Payload: Schüler + letzte Beobachtungen
   const [students, setStudents] = useState([])
   useEffect(() => {
@@ -389,13 +394,23 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   }
 
   async function handleDelete() {
-    if (!savedLessonId) return
-    if (!window.confirm('Stunde wirklich löschen?')) return
+    console.log('handleDelete called, savedLessonId:', savedLessonId)
+    if (!savedLessonId) {
+      console.log('savedLessonId is null/undefined, returning')
+      return
+    }
+    
+    const confirmed = window.confirm('Stunde wirklich löschen?')
+    console.log('Confirm dialog result:', confirmed)
+    if (!confirmed) return
 
-    const { error } = await supabase
+    console.log('Starting DELETE for id:', savedLessonId)
+    const { data, error } = await supabase
       .from('lessons')
       .delete()
       .eq('id', savedLessonId)
+
+    console.log('DELETE response - data:', data, 'error:', error)
 
     if (error) {
       console.error('Löschen fehlgeschlagen:', error)
@@ -403,12 +418,10 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       return
     }
 
-    // Danach State zurücksetzen:
-    setContent('')
-    setSavedLessonId(null)
-    setLessonStatus(null)
-    setTopic(slot ? `${slot.unit.title} – Stunde ${slot.slotIndex + 1} von ${slot.unit.estimated_hours}` : '')
-    onLessonSaved(null)
+    console.log('DELETE successful, reloading page')
+    // Temporärer Fix: reload() statt State-Reset
+    // TODO: Später saubere Cache-Invalidierung implementieren
+    window.location.reload()
   }
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -426,6 +439,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   const { unit, slotIndex } = slot
   const isStreaming = generating || refining
   const hasContent = content.length > 0
+
+  console.log('[LessonWorkspace Render] savedLessonId:', savedLessonId, 'isStreaming:', isStreaming, 'hasContent:', hasContent)
 
   return (
     <section className="workspace card">
@@ -483,15 +498,19 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
              🖨 Drucken
            </button>
          )}
-         {savedLessonId && !isStreaming && (
+         {console.log('[Delete Button] Condition check - savedLessonId:', savedLessonId, '!isStreaming:', !isStreaming) || (savedLessonId && !isStreaming && (
            <button
              className="btn-delete-text"
              type="button"
-             onClick={handleDelete}
+             onClick={() => { 
+               console.log('BUTTON CLICKED - savedLessonId:', savedLessonId)
+               alert('click!'); 
+               handleDelete(); 
+             }}
            >
              Löschen
            </button>
-         )}
+         ))}
        </div>
 
       {genError && <div className="alert error">{genError}</div>}
@@ -529,7 +548,11 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
              <button
                className="btn-delete-text"
                type="button"
-               onClick={handleDelete}
+               onClick={() => { 
+                 console.log('BUTTON CLICKED (bottom) - savedLessonId:', savedLessonId)
+                 alert('click!'); 
+                 handleDelete(); 
+               }}
              >
                Löschen
              </button>

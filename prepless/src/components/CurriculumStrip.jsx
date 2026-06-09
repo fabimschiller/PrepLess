@@ -20,6 +20,7 @@ export default function CurriculumStrip({
   savedLesson = null,
   // { id, status, conducted_at } – aktualisiert einen Slot-Status ohne Reload
   updatedLesson = null,
+  deletedLessonId = null,
 }) {
   const [units, setUnits] = useState([])
   const [loading, setLoading] = useState(false)
@@ -185,6 +186,18 @@ export default function CurriculumStrip({
       return next
     })
   }, [updatedLesson?.id, updatedLesson?.status]) // eslint-disable-line
+
+  // Gelöschte Stunde aus dem Cache entfernen
+  useEffect(() => {
+    if (!deletedLessonId) return
+    setLessonsByUnit((prev) => {
+      const next = { ...prev }
+      for (const [unitId, lessons] of Object.entries(next)) {
+        next[unitId] = lessons.filter((l) => l.id !== deletedLessonId)
+      }
+      return next
+    })
+  }, [deletedLessonId])
 
   // hasUnits nach oben melden
   useEffect(() => {
