@@ -557,9 +557,12 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
           onChange={(e) => setTopic(e.target.value)}
           disabled={isStreaming || topicSuggesting}
           list={!savedLessonId ? 'ws-topic-suggestions' : undefined}
+          autoComplete="off"
         />
-        {!savedLessonId && (aiSuggestions.length > 0 || topicSuggestions.length > 0) && (
+        {console.log('[Input Field] list attr:', !savedLessonId ? 'ws-topic-suggestions' : 'undefined') || null}
+        {console.log('[Datalist] Condition - savedLessonId:', savedLessonId, 'aiSuggestions.length:', aiSuggestions.length, 'topicSuggestions.length:', topicSuggestions.length) || (!savedLessonId && (aiSuggestions.length > 0 || topicSuggestions.length > 0) && (
           <datalist id="ws-topic-suggestions">
+            {console.log('[Datalist] Rendering datalist with aiSuggestions:', aiSuggestions) || null}
             {/* KI-generierte Vorschläge zuerst */}
             {aiSuggestions.map((suggestion, idx) => (
               <option key={`ai-${idx}`} value={suggestion} />
@@ -569,7 +572,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
               <option key={`unit-${idx}`} value={suggestion} />
             ))}
           </datalist>
-        )}
+        ))}
       </div>
 
       <div className="workspace-actions">
