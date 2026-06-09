@@ -64,15 +64,29 @@ export default function CurriculumStrip({
     return cleanup
   }, [load, refreshKey])
 
-  // Lehrplan-Stunden für eine Einheit laden
+  // Lehrplan-Stunden für eine Einheit laden; gibt geladene Stunden zurück
   async function loadLessonsForUnit(unitId) {
-    if (lessonsByUnit[unitId]) return // bereits geladen
+    if (lessonsByUnit[unitId]) return lessonsByUnit[unitId]
     const { data } = await supabase
       .from('lessons')
-      .select('id, title, content, position, curriculum_unit_id')
+      .select('id, title, content, position, curriculum_unit_id, status, conducted_at')
       .eq('curriculum_unit_id', unitId)
       .order('position', { ascending: true })
-    setLessonsByUnit((prev) => ({ ...prev, [unitId]: data ?? [] }))
+    const lessons = data ?? []
+    setLessonsByUnit((prev) => ({ ...prev, [unitId]: lessons }))
+    return lessons
+  }
+
+  // Letzten 'planned'-Slot in einer Einheit automatisch selektieren
+  function autoSelectPlannedSlot(unit, lessons) {
+    const planned = lessons
+      .filter((l) => l.status === 'planned' || l.status == null)
+      .sort((a, b) => b.position - a.position) // letzter zuerst
+    if (planned.length === 0) return
+    const lesson = planned[0]
+    const slotIndex = lesson.position - 1
+    setActiveSlot({ unitId: unit.id, slotIndex })
+    onSlotSelect?.({ unit, slotIndex, lesson })
   }
 
   function handleUnitClick(unit) {
@@ -82,24 +96,25 @@ export default function CurriculumStrip({
     setUserExpanded(true)
   }
 
-  // Beim ersten Laden: erste Einheit automatisch aufklappen (oder die "aktuelle")
+  // Beim ersten Laden: auto-expand + letzten 'planned'-Slot selektieren
   useEffect(() => {
     if (units.length === 0) return
     if (userExpanded) return
     if (expandedUnitId) return
     const initial = pickCurrentUnit(units) ?? units[0]
-    if (initial) {
-      setExpandedUnitId(initial.id)
-      loadLessonsForUnit(initial.id)
-    }
+    if (!initial) return
+    setExpandedUnitId(initial.id)
+    loadLessonsForUnit(initial.id).then((lessons) => {
+      autoSelectPlannedSlot(initial, lessons)
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [units])
 
   function handleSlotClick(unit, slotIndex) {
     const lessons = lessonsByUnit[unit.id] ?? []
+    // status + conducted_at sind durch loadLessonsForUnit bereits im Objekt
     const lesson = lessons.find((l) => l.position === slotIndex + 1) ?? null
-    const next = { unitId: unit.id, slotIndex }
-    setActiveSlot(next)
+    setActiveSlot({ unitId: unit.id, slotIndex })
     onSlotSelect?.({ unit, slotIndex, lesson })
   }
 

@@ -2,11 +2,9 @@
  * LessonWorkspace – Arbeitsbereich für einen Slot
  *
  * Props:
- *   activeClass         – Klassen-Objekt
- *   slot                – { unit, slotIndex, lesson | null }  oder null
- *   onLessonSaved       – fn(lesson) – teilt Eltern mit dass eine Stunde gespeichert wurde
- *   onLessonUpdated     – fn({ id, status, conducted_at }) – Status-Update an Strip
- *   onObservationsSaved – fn()
+ *   activeClass   – Klassen-Objekt
+ *   slot          – { unit, slotIndex, lesson | null } oder null
+ *   onLessonSaved – fn(lesson)
  */
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
@@ -59,57 +57,10 @@ async function streamSSE(response, onChunk, signal) {
   }
 }
 
-// ─── Beobachtungsformular ─────────────────────────────────────────────────────
-function ObservationsForm({ students, lessonId, onSaved }) {
-  const [observations, setObservations] = useState({})
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    const rows = students
-      .map((s) => ({ lesson_id: lessonId, student_id: s.id, note: (observations[s.id] ?? '').trim() }))
-      .filter((r) => r.note.length > 0)
-    if (!rows.length) { setError('Bitte mindestens eine Beobachtung eintragen.'); return }
-    setSaving(true); setError(null)
-    const { error: insErr } = await supabase.from('observations').insert(rows)
-    setSaving(false)
-    if (insErr) { setError(insErr.message); return }
-    setSuccess('Beobachtungen gespeichert.')
-    onSaved?.()
-  }
-
-  return (
-    <form className="obs-form" onSubmit={handleSubmit}>
-      <h3>Beobachtungen zur Stunde</h3>
-      <div className="obs-grid">
-        {students.map((s) => (
-          <div key={s.id} className="field">
-            <label htmlFor={`obs-${s.id}`}>{s.name}</label>
-            <textarea
-              id={`obs-${s.id}`} rows={2} placeholder="Beobachtung…"
-              value={observations[s.id] ?? ''}
-              onChange={(e) => setObservations((p) => ({ ...p, [s.id]: e.target.value }))}
-            />
-          </div>
-        ))}
-      </div>
-      {error && <div className="alert error">{error}</div>}
-      {success && <div className="alert success">{success}</div>}
-      <button className="btn-primary" type="submit" disabled={saving}>
-        {saving ? 'Speichert…' : 'Beobachtungen speichern'}
-      </button>
-    </form>
-  )
-}
-
 // ─── Haupt-Komponente ─────────────────────────────────────────────────────────
-export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLessonUpdated, onObservationsSaved }) {
-  // slot = { unit, slotIndex, lesson | null }
-
+export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   const [topic, setTopic] = useState('')
-  const [content, setContent] = useState('')       // generierter / geladener Text
+  const [content, setContent] = useState('')
   const [savedLessonId, setSavedLessonId] = useState(null)
   const [lessonStatus, setLessonStatus] = useState(null)
   const [generating, setGenerating] = useState(false)
@@ -117,17 +68,13 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [saveSuccess, setSaveSuccess] = useState(null)
-
   const [refinement, setRefinement] = useState('')
   const [refining, setRefining] = useState(false)
 
-  const [students, setStudents] = useState([])
-
   const abortRef = useRef(null)
-  // Merke den ursprünglichen Prompt für Refinement-Konversation
-  const originalPromptRef = useRef(null)
 
-  // Schüler laden
+  // Für den Generate-Payload: Schüler + letzte Beobachtungen
+  const [students, setStudents] = useState([])
   useEffect(() => {
     if (!activeClass?.id) { setStudents([]); return }
     supabase
@@ -147,25 +94,20 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
     setSaveError(null)
     setGenError(null)
     setRefinement('')
-    originalPromptRef.current = null
 
     if (!slot) {
-      setTopic(''); setContent(''); setSavedLessonId(null)
-      setLessonStatus(null)
+      setTopic(''); setContent(''); setSavedLessonId(null); setLessonStatus(null)
       return
     }
 
     const { unit, slotIndex, lesson } = slot
-    const slotNum = slotIndex + 1
-    const total = unit.estimated_hours
-
     if (lesson) {
       setTopic(lesson.title ?? '')
       setContent(lesson.content ?? '')
       setSavedLessonId(lesson.id)
       setLessonStatus(lesson.status ?? 'planned')
     } else {
-      setTopic(`${unit.title} – Stunde ${slotNum} von ${total}`)
+      setTopic(`${unit.title} – Stunde ${slotIndex + 1} von ${unit.estimated_hours}`)
       setContent('')
       setSavedLessonId(null)
       setLessonStatus(null)
@@ -179,7 +121,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
     const accessToken = sessionData?.session?.access_token
     if (!accessToken) throw new Error('Nicht eingeloggt.')
 
-    // Letzte Beobachtungen je Schüler aufbauen
+    // Letzte Beobachtungen je Schüler für den Prompt
     const studentNames = students.map((s) => s.name)
     const latestObs = {}
     if (students.length) {
@@ -197,7 +139,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
     const studentNotes = {}
     for (const s of students) studentNotes[s.name] = latestObs[s.id] ?? s.notes ?? ''
 
-    // Letzte 5 Stunden dieser Klasse
+    // Letzte 5 Stunden für Kontext
     const { data: prevLessons } = await supabase
       .from('lessons')
       .select('title, generated_at')
@@ -208,25 +150,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
 
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
     const controller = new AbortController()
     abortRef.current = controller
-
-    const payload = {
-      className: activeClass.name,
-      subject: activeClass.subject,
-      grade: activeClass.grade,
-      state: activeClass.state,
-      studentNames,
-      studentNotes,
-      topic: topic.trim(),
-      previousLessons,
-      curriculumUnitTitle: slot?.unit?.title ?? '',
-      curriculumUnitDescription: slot?.unit?.description ?? '',
-      ...(previousContent && refinementRequest
-        ? { previousContent, refinementRequest }
-        : {}),
-    }
 
     const response = await fetch(`${supabaseUrl}/functions/v1/generate`, {
       method: 'POST',
@@ -235,13 +160,29 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
         apikey: supabaseAnonKey,
         Authorization: `Bearer ${accessToken}`,
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        className: activeClass.name,
+        subject: activeClass.subject,
+        grade: activeClass.grade,
+        state: activeClass.state,
+        studentNames,
+        studentNotes,
+        topic: topic.trim(),
+        previousLessons,
+        curriculumUnitTitle: slot?.unit?.title ?? '',
+        curriculumUnitDescription: slot?.unit?.description ?? '',
+        ...(previousContent && refinementRequest
+          ? { previousContent, refinementRequest }
+          : {}),
+      }),
       signal: controller.signal,
     })
 
     if (!response.ok) {
       const errText = await response.text().catch(() => '')
-      throw new Error(`Generierung fehlgeschlagen (${response.status})${errText ? `: ${errText}` : ''}`)
+      throw new Error(
+        `Generierung fehlgeschlagen (${response.status})${errText ? `: ${errText}` : ''}`
+      )
     }
 
     return { response, signal: controller.signal }
@@ -251,16 +192,11 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
     if (!topic.trim()) { setGenError('Bitte ein Thema eingeben.'); return }
     setGenerating(true); setGenError(null); setContent('')
     setSavedLessonId(null); setSaveSuccess(null); setSaveError(null)
-    originalPromptRef.current = null
 
     try {
       const { response, signal } = await callGenerateStream()
       let acc = ''
-      await streamSSE(response, (chunk) => {
-        acc += chunk
-        setContent(acc)
-      }, signal)
-      originalPromptRef.current = acc
+      await streamSSE(response, (chunk) => { acc += chunk; setContent(acc) }, signal)
     } catch (err) {
       if (err.name !== 'AbortError') setGenError(err.message ?? String(err))
     } finally {
@@ -281,13 +217,13 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
         refinementRequest: req,
       })
       let acc = ''
-      await streamSSE(response, (chunk) => {
-        acc += chunk
-        setContent(acc)
-      }, signal)
+      await streamSSE(response, (chunk) => { acc += chunk; setContent(acc) }, signal)
       setRefinement('')
     } catch (err) {
-      if (err.name !== 'AbortError') { setGenError(err.message ?? String(err)); setContent(prevContent) }
+      if (err.name !== 'AbortError') {
+        setGenError(err.message ?? String(err))
+        setContent(prevContent)
+      }
     } finally {
       setRefining(false)
     }
@@ -349,7 +285,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
         </div>
       </div>
 
-      {/* Topic */}
       <div className="field">
         <label htmlFor="ws-topic">Thema der Stunde</label>
         <input
@@ -362,7 +297,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
         />
       </div>
 
-      {/* Generate / Abort */}
       <div className="workspace-actions">
         <button
           className="btn-primary"
@@ -381,7 +315,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
 
       {genError && <div className="alert error">{genError}</div>}
 
-      {/* Stream-Inhalt */}
       {(isStreaming || hasContent) && (
         <div className="workspace-content-wrap">
           {isStreaming && !hasContent && (
@@ -399,7 +332,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
         </div>
       )}
 
-      {/* Speichern */}
       {hasContent && !isStreaming && (
         <div className="workspace-save-row">
           <button
@@ -415,7 +347,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
         </div>
       )}
 
-      {/* Refinement */}
       {hasContent && (
         <div className="workspace-refine">
           <div className="field">
@@ -438,7 +369,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
                 aria-label="Verfeinern"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+                  strokeLinejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13" />
                   <polygon points="22 2 15 22 11 13 2 9 22 2" />
                 </svg>
@@ -446,15 +378,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
             </div>
           </div>
         </div>
-      )}
-
-      {/* Beobachtungsformular */}
-      {savedLessonId && students.length > 0 && (
-        <ObservationsForm
-          students={students}
-          lessonId={savedLessonId}
-          onSaved={onObservationsSaved}
-        />
       )}
     </section>
   )
