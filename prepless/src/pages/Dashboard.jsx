@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import CurriculumTimeline from '../components/CurriculumTimeline'
 import './Dashboard.css'
 
 const BUNDESLAENDER = ['Bayern']
@@ -29,6 +30,14 @@ export default function Dashboard() {
   const [studentsError, setStudentsError] = useState(null)
   const [newStudentName, setNewStudentName] = useState('')
   const [addingStudent, setAddingStudent] = useState(false)
+
+  // ---- Lehrplan ----
+  const [curriculumLoading, setCurriculumLoading] = useState(false)
+  const [curriculumError, setCurriculumError] = useState(null)
+  const [currentUnit, setCurrentUnit] = useState(null)
+  const [curriculumRefresh, setCurriculumRefresh] = useState(0)
+  // Letzter automatisch vorgeschlagener Topic – damit wir Nutzer-Edits respektieren
+  const [topicSuggestion, setTopicSuggestion] = useState('')
 
   // ---- Feature 2: Stunde generieren ----
   const [topic, setTopic] = useState('')
@@ -140,6 +149,9 @@ export default function Dashboard() {
       setObservationsSuccess(null)
       setObservationsError(null)
       setGenerationError(null)
+      setCurrentUnit(null)
+      setCurriculumError(null)
+      setTopicSuggestion('')
     } else {
       setStudents([])
       setLatestObservations({})
@@ -149,6 +161,18 @@ export default function Dashboard() {
   function updateField(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
+
+  // Topic mit aktueller Lehrplan-Einheit vorbefüllen, solange das Feld leer
+  // ist oder noch den vorherigen Vorschlag enthält (Nutzer-Edits respektieren).
+  useEffect(() => {
+    const next = currentUnit?.title ?? ''
+    setTopic((prev) => {
+      if (!prev || prev === topicSuggestion) return next
+      return prev
+    })
+    setTopicSuggestion(next)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUnit?.id])
 
   async function handleCreate(e) {
     e.preventDefault()
@@ -184,7 +208,58 @@ export default function Dashboard() {
     setClasses((prev) => [data, ...prev])
     setActiveClassId(data.id)
     setForm(emptyForm)
-    setFormSuccess(`Klasse "${data.name}" angelegt.`)
+    setFormSuccess(`Klasse "${data.name}" angelegt. Lehrplan wird generiert…`)
+
+    // Lehrplan asynchron generieren
+    generateCurriculumForClass(data).catch((err) => {
+      setCurriculumError(err?.message ?? String(err))
+    })
+  }
+
+  async function generateCurriculumForClass(cls) {
+    setCurriculumLoading(true)
+    setCurriculumError(null)
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData?.session?.access_token
+      if (!accessToken) throw new Error('Nicht eingeloggt.')
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+      const res = await fetch(
+        `${supabaseUrl}/functions/v1/generate-curriculum`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: supabaseAnonKey,
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            classId: cls.id,
+            subject: cls.subject,
+            grade: cls.grade,
+            state: cls.state,
+          }),
+        }
+      )
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '')
+        throw new Error(
+          `Lehrplan-Generierung fehlgeschlagen (${res.status})${
+            errText ? `: ${errText}` : ''
+          }`
+        )
+      }
+
+      setFormSuccess(`Klasse "${cls.name}" inklusive Lehrplan angelegt.`)
+      setCurriculumRefresh((n) => n + 1)
+    } finally {
+      setCurriculumLoading(false)
+    }
   }
 
   async function handleAddStudent(e) {
@@ -283,6 +358,8 @@ export default function Dashboard() {
           studentNotes,
           topic: topic.trim(),
           previousLessons,
+          curriculumUnitTitle: currentUnit?.title ?? '',
+          curriculumUnitDescription: currentUnit?.description ?? '',
         }),
       })
 
@@ -560,6 +637,25 @@ export default function Dashboard() {
 
         {activeClass && (
           <>
+            <section className="card card-wide">
+              {curriculumLoading && (
+                <div className="loading-indicator" style={{ marginBottom: 12 }}>
+                  <span className="spinner" />
+                  <span>Lehrplan wird generiert…</span>
+                </div>
+              )}
+              {curriculumError && (
+                <div className="alert error" style={{ marginBottom: 12 }}>
+                  {curriculumError}
+                </div>
+              )}
+              <CurriculumTimeline
+                classId={activeClass.id}
+                refreshKey={curriculumRefresh}
+                onCurrentUnitChange={setCurrentUnit}
+              />
+            </section>
+
             <section className="card card-wide">
               <h2>Schüler – {activeClass.name}</h2>
               <p className="card-subtitle">

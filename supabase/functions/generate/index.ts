@@ -45,6 +45,8 @@ interface GenerateRequest {
   topic?: string;
   // previousLessons darf Array (Titel-Liste) oder String sein
   previousLessons?: string[] | string;
+  curriculumUnitTitle?: string;
+  curriculumUnitDescription?: string;
 }
 
 function formatPreviousLessons(input: GenerateRequest["previousLessons"]): string {
@@ -68,6 +70,8 @@ function buildUserPrompt(body: GenerateRequest): string {
   const state = body.state ?? "";
   const topic = body.topic ?? "";
   const previousLessons = formatPreviousLessons(body.previousLessons);
+  const unitTitle = (body.curriculumUnitTitle ?? "").trim();
+  const unitDesc = (body.curriculumUnitDescription ?? "").trim();
 
   const studentNames = Array.isArray(body.studentNames)
     ? body.studentNames
@@ -79,16 +83,28 @@ function buildUserPrompt(body: GenerateRequest): string {
     .map(([name, notiz]) => `${name}: ${notiz}`)
     .join("\n");
 
-  return [
+  const lines = [
     `Klasse: ${className}, ${subject}, ${state} (Lehrplan beachten)`,
     `Jahrgang: ${grade}`,
     `Thema: ${topic}`,
+  ];
+
+  if (unitTitle) {
+    lines.push(`Aktuelle Lehrplan-Einheit: ${unitTitle}`);
+    if (unitDesc) {
+      lines.push(`Inhalte der Einheit: ${unitDesc}`);
+    }
+  }
+
+  lines.push(
     `Vorherige Stunden: ${previousLessons}`,
     `Schüler in der Klasse: ${studentNames.join(", ")}`,
     `Bekannte Besonderheiten:`,
     notesLines.length > 0 ? notesLines : "(keine)",
     `Klassengröße: ${studentNames.length}`,
-  ].join("\n");
+  );
+
+  return lines.join("\n");
 }
 
 function jsonError(status: number, message: string): Response {
