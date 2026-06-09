@@ -243,7 +243,15 @@ Anwendungsaufgaben zu linearen Gleichungen`;
     console.log('PARSED SUGGESTIONS:', JSON.stringify(suggestions));
 
     return new Response(
-      JSON.stringify({ suggestions }),
+      JSON.stringify({ 
+        suggestions,
+        debug: {
+          rawText: rawText,
+          splitLines: rawText.split("\n"),
+          trimmedLines: rawText.split("\n").map((l) => l.trim()),
+          filteredLines: rawText.split("\n").map((l) => l.trim()).filter((l) => l.length > 0),
+        }
+      }),
       {
         status: 200,
         headers: { ...CORS_HEADERS, "Content-Type": "application/json" },

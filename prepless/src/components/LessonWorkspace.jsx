@@ -79,6 +79,11 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     console.log('[LessonWorkspace] savedLessonId changed:', savedLessonId)
   }, [savedLessonId])
 
+  // Debug: aiSuggestions tracking
+  useEffect(() => {
+    console.log('[LessonWorkspace] aiSuggestions changed:', aiSuggestions)
+  }, [aiSuggestions])
+
   // Für den Generate-Payload: Schüler + letzte Beobachtungen
   const [students, setStudents] = useState([])
   useEffect(() => {
@@ -277,12 +282,18 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       }
 
       const result = await response.json()
+      console.log('suggestions received:', result.suggestions)
+      console.log('result object:', result)
       if (result.suggestions && Array.isArray(result.suggestions)) {
+        console.log('Setting aiSuggestions:', result.suggestions)
         setAiSuggestions(result.suggestions)
         // Setze den ersten Vorschlag automatisch
         if (result.suggestions.length > 0) {
+          console.log('Setting topic to first suggestion:', result.suggestions[0])
           setTopic(result.suggestions[0])
         }
+      } else {
+        console.log('result.suggestions is not an array or is missing')
       }
     } catch (err) {
       console.error('suggestTopic error:', err)
