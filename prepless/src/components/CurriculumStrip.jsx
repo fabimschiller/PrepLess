@@ -40,63 +40,91 @@ export default function CurriculumStrip({
   // Aktiver Slot: { unitId, slotIndex }
   const [activeSlot, setActiveSlot] = useState(null)
 
+  // Wird gesetzt sobald der initiale Auto-Select einmalig gelaufen ist
+  const autoSelectDoneRef = useRef(false)
+
   const load = useCallback(() => {
     if (!classId) { setUnits([]); return }
-    // Klassenwechsel: Auto-Select-State zurücksetzen
+    // Klassenwechsel: alles zurücksetzen
     setUserExpanded(false)
     setExpandedUnitId(null)
     setLessonsByUnit({})
     setActiveSlot(null)
-    expandedUnitRef.current = null
+    autoSelectDoneRef.current = false
 
     let cancelled = false
     setLoading(true)
     setError(null)
-    supabase
-      .from('curriculum_units')
-      .select('id, class_id, position, title, description, estimated_hours, start_month, end_month')
-      .eq('class_id', classId)
-      .order('position', { ascending: true })
-      .then(({ data, error: err }) => {
-        if (cancelled) return
-        if (err) { setError(err.message); setUnits([]) }
-        else setUnits(data ?? [])
-        setLoading(false)
-      })
+
+    // Units + alle Stunden der Klasse in einem Schritt laden
+    Promise.all([
+      supabase
+        .from('curriculum_units')
+        .select('id, class_id, position, title, description, estimated_hours, start_month, end_month')
+        .eq('class_id', classId)
+        .order('position', { ascending: true }),
+      supabase
+        .from('lessons')
+        .select('id, title, content, position, curriculum_unit_id, status, conducted_at, generated_at')
+        .eq('class_id', classId)
+        .order('generated_at', { ascending: false }),
+    ]).then(([unitsRes, lessonsRes]) => {
+      if (cancelled) return
+
+      const loadedUnits = unitsRes.data ?? []
+      const allLessons = lessonsRes.data ?? []
+
+      // lessonsByUnit aufbauen
+      const byUnit = {}
+      for (const l of allLessons) {
+        if (!byUnit[l.curriculum_unit_id]) byUnit[l.curriculum_unit_id] = []
+        byUnit[l.curriculum_unit_id].push(l)
+      }
+      setUnits(loadedUnits)
+      setLessonsByUnit(byUnit)
+      setLoading(false)
+
+      if (!loadedUnits.length || !onSlotSelect) return
+
+      // Auto-Select: zuletzt gespeicherte 'planned'-Stunde,
+      // fallback auf zuletzt gespeicherte 'conducted'-Stunde
+      const candidate =
+        allLessons.find((l) => l.status === 'planned') ??
+        allLessons.find((l) => l.status === 'conducted') ??
+        null
+
+      if (!candidate) return
+
+      const unit = loadedUnits.find((u) => u.id === candidate.curriculum_unit_id)
+      if (!unit) return
+
+      const slotIndex = candidate.position - 1
+      setExpandedUnitId(unit.id)
+      setActiveSlot({ unitId: unit.id, slotIndex })
+      autoSelectDoneRef.current = true
+      onSlotSelect({ unit, slotIndex, lesson: candidate })
+    })
+
     return () => { cancelled = true }
-  }, [classId])
+  }, [classId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const cleanup = load()
     return cleanup
   }, [load, refreshKey])
 
-  // Lehrplan-Stunden für eine Einheit laden; gibt immer frische Stunden zurück
+  // Stunden für eine Einheit on-demand nachladen (bei manuellem Unit-Klick)
   async function loadLessonsForUnit(unitId) {
-    // Guard: bereits gecached — aber nur wenn nicht leer (leerer Cache = noch nicht geladen)
     const cached = lessonsByUnit[unitId]
     if (cached && cached.length > 0) return cached
     const { data } = await supabase
       .from('lessons')
-      .select('id, title, content, position, curriculum_unit_id, status, conducted_at')
+      .select('id, title, content, position, curriculum_unit_id, status, conducted_at, generated_at')
       .eq('curriculum_unit_id', unitId)
       .order('position', { ascending: true })
     const lessons = data ?? []
     setLessonsByUnit((prev) => ({ ...prev, [unitId]: lessons }))
     return lessons
-  }
-
-  // Letzten 'planned'-Slot in einer Einheit automatisch selektieren
-  function autoSelectPlannedSlot(unit, lessons) {
-    const planned = lessons
-      .filter((l) => l.status === 'planned' || l.status == null)
-      .sort((a, b) => b.position - a.position)
-    console.log('autoSelect:', unit.title, lessons, planned)
-    if (planned.length === 0) return
-    const lesson = planned[0]
-    const slotIndex = lesson.position - 1
-    setActiveSlot({ unitId: unit.id, slotIndex })
-    onSlotSelect?.({ unit, slotIndex, lesson })
   }
 
   function handleUnitClick(unit) {
@@ -105,40 +133,6 @@ export default function CurriculumStrip({
     if (!isOpen) loadLessonsForUnit(unit.id)
     setUserExpanded(true)
   }
-
-  // Beim ersten Laden: auto-expand + letzten 'planned'-Slot selektieren
-  // onSlotSelect als Dependency damit der Effect nicht mit undefined-Callback feuert
-  useEffect(() => {
-    if (units.length === 0) return
-    if (!onSlotSelect) return
-    if (userExpanded) return
-    if (expandedUnitId) return
-    const initial = pickCurrentUnit(units) ?? units[0]
-    if (!initial) return
-    setExpandedUnitId(initial.id)
-    loadLessonsForUnit(initial.id).then((lessons) => {
-      autoSelectPlannedSlot(initial, lessons)
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [units, onSlotSelect])
-
-  // Fallback: wenn lessonsByUnit für die expandierte Einheit nach dem Laden
-  // befüllt wird, nochmal autoSelect versuchen (Timing-Absicherung)
-  const expandedUnitRef = useRef(null)
-  useEffect(() => {
-    if (userExpanded) return
-    if (!expandedUnitId) return
-    if (!onSlotSelect) return
-    const lessons = lessonsByUnit[expandedUnitId]
-    if (!lessons || lessons.length === 0) return
-    // Nur auslösen wenn sich der Wert wirklich geändert hat
-    if (expandedUnitRef.current === expandedUnitId) return
-    expandedUnitRef.current = expandedUnitId
-    const unit = units.find((u) => u.id === expandedUnitId)
-    if (!unit) return
-    autoSelectPlannedSlot(unit, lessons)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lessonsByUnit, expandedUnitId, onSlotSelect])
 
   function handleSlotClick(unit, slotIndex) {
     const lessons = lessonsByUnit[unit.id] ?? []
