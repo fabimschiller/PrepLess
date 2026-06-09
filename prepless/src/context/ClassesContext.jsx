@@ -34,7 +34,7 @@ export function ClassesProvider({ children }) {
     setError(null)
     const { data, error: err } = await supabase
       .from('classes')
-      .select('id, name, subject, grade, state, created_at')
+      .select('id, name, subject, subjects, school_type, grade, state, created_at')
       .order('created_at', { ascending: false })
 
     if (err) {
