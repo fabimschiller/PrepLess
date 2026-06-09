@@ -179,17 +179,17 @@ Deno.serve(async (req: Request) => {
 
   const isSuggestionOnly = body.suggestionOnly === true;
 
-  // Modus 1: Nur Vorschlag generieren
+  // Modus 1: Nur Vorschläge generieren
   if (isSuggestionOnly) {
     const previousLessonsText = Array.isArray(body.previousLessons)
       ? body.previousLessons.join(", ")
       : body.previousLessons ?? "noch keine";
 
-    const suggestionPrompt = `Schlage einen prägnanten Titel (max. 60 Zeichen) für Stunde ${(body.slotIndex ?? 0) + 1} von ${body.estimatedHours ?? 1} der Einheit "${body.curriculumUnitTitle ?? ""}" vor.
+    const suggestionPrompt = `Schlage drei verschiedene prägnante Titel (je max. 60 Zeichen) für Stunde ${(body.slotIndex ?? 0) + 1} von ${body.estimatedHours ?? 1} der Einheit "${body.curriculumUnitTitle ?? ""}" vor.
 
-Bereits behandelte Stunden: ${previousLessonsText}
+Berücksichtige bereits behandelte Stunden: ${previousLessonsText}
 
-Antworte NUR mit dem Titel, ohne Erklärung oder Formatierung.`;
+Antworte NUR mit drei Titeln, einer pro Zeile, ohne Nummerierung, ohne Erklärung.`;
 
     const suggestionRes = await fetch(ANTHROPIC_API_URL, {
       method: "POST",
@@ -199,8 +199,8 @@ Antworte NUR mit dem Titel, ohne Erklärung oder Formatierung.`;
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 100,
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 200,
         stream: false,
         system: "Du bist ein Experte für Lehrplan-Struktur. Generiere prägnante, fokussierte Stundentitel für Lehrer.",
         messages: [{ role: "user", content: suggestionPrompt }],
@@ -216,10 +216,17 @@ Antworte NUR mit dem Titel, ohne Erklärung oder Formatierung.`;
     }
 
     const suggestionData = await suggestionRes.json();
-    const suggestion = suggestionData.content?.[0]?.text?.trim() ?? "";
+    const rawText = suggestionData.content?.[0]?.text?.trim() ?? "";
+    
+    // Splitte nach Zeilenumbruch und filtere leere Zeilen
+    const suggestions = rawText
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .slice(0, 3); // Maximal 3 Vorschläge
 
     return new Response(
-      JSON.stringify({ suggestion }),
+      JSON.stringify({ suggestions }),
       {
         status: 200,
         headers: { ...CORS_HEADERS, "Content-Type": "application/json" },

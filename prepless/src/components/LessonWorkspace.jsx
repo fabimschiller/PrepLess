@@ -112,6 +112,9 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       })
   }, [activeClass?.id])
 
+  // KI-generierte Vorschläge für leere Slots
+  const [aiSuggestions, setAiSuggestions] = useState([])
+
   // Klassenwechsel: Content sofort löschen damit kein alter Inhalt sichtbar bleibt
   useEffect(() => {
     setContent('')
@@ -131,6 +134,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     setGenError(null)
     setRefinement('')
     setTopicSuggesting(false)
+    setAiSuggestions([])
 
     if (!slot) {
       setTopic(''); setContent(''); setSavedLessonId(null); setLessonStatus(null)
@@ -273,11 +277,16 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       }
 
       const result = await response.json()
-      if (result.suggestion) {
-        setTopic(result.suggestion)
+      if (result.suggestions && Array.isArray(result.suggestions)) {
+        setAiSuggestions(result.suggestions)
+        // Setze den ersten Vorschlag automatisch
+        if (result.suggestions.length > 0) {
+          setTopic(result.suggestions[0])
+        }
       }
     } catch (err) {
       console.error('suggestTopic error:', err)
+      setAiSuggestions([])
       // Fehler ignorieren, Nutzer kann manuell eingeben
     } finally {
       setTopicSuggesting(false)
@@ -545,10 +554,15 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
           disabled={isStreaming || topicSuggesting}
           list={!savedLessonId ? 'ws-topic-suggestions' : undefined}
         />
-        {!savedLessonId && topicSuggestions.length > 0 && (
+        {!savedLessonId && (aiSuggestions.length > 0 || topicSuggestions.length > 0) && (
           <datalist id="ws-topic-suggestions">
+            {/* KI-generierte Vorschläge zuerst */}
+            {aiSuggestions.map((suggestion, idx) => (
+              <option key={`ai-${idx}`} value={suggestion} />
+            ))}
+            {/* Dann Curriculum Unit Vorschläge */}
             {topicSuggestions.map((suggestion, idx) => (
-              <option key={idx} value={suggestion} />
+              <option key={`unit-${idx}`} value={suggestion} />
             ))}
           </datalist>
         )}
