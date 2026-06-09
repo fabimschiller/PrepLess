@@ -233,6 +233,66 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     abortRef.current?.abort()
   }
 
+  function handlePrint() {
+    const win = window.open('', '_blank', 'width=900,height=700')
+    if (!win) return
+
+    const heading = `${activeClass.name} – ${topic.trim() || slot?.unit?.title || 'Unterrichtsstunde'}`
+    const escapedContent = content
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+
+    win.document.write(`<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>${heading}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 12pt;
+      line-height: 1.65;
+      color: #111;
+      background: #fff;
+      padding: 28mm 24mm;
+      max-width: 210mm;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 16pt;
+      font-weight: bold;
+      margin-bottom: 18pt;
+      padding-bottom: 8pt;
+      border-bottom: 1.5px solid #333;
+    }
+    pre {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 12pt;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    @media print {
+      body { padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <h1>${heading}</h1>
+  <pre>${escapedContent}</pre>
+  <script>
+    window.onload = function() {
+      window.print();
+      window.onafterprint = function() { window.close(); };
+    };
+  </script>
+</body>
+</html>`)
+    win.document.close()
+  }
+
   async function handleSave() {
     if (!content.trim() || !activeClass || !slot) return
     setSaving(true); setSaveError(null); setSaveSuccess(null)
@@ -325,7 +385,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
           <button
             className="btn-secondary"
             type="button"
-            onClick={() => window.print()}
+            onClick={handlePrint}
           >
             🖨 Drucken
           </button>

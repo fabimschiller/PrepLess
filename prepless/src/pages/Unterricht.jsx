@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useClasses } from '../context/ClassesContext'
 import CurriculumStrip from '../components/CurriculumStrip'
 import LessonWorkspace from '../components/LessonWorkspace'
@@ -21,9 +21,9 @@ export default function Unterricht() {
   const [savedLesson, setSavedLesson] = useState(null)
   const [updatedLesson, setUpdatedLesson] = useState(null)
 
-  function handleSlotSelect(slot) {
+  const handleSlotSelect = useCallback((slot) => {
     setActiveSlot(slot)
-  }
+  }, [])
 
   function handleLessonSaved(lesson) {
     // Slot lokal aktualisieren: lesson in den Slot eintragen

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import {
   computeUnitStatus,
@@ -42,6 +42,13 @@ export default function CurriculumStrip({
 
   const load = useCallback(() => {
     if (!classId) { setUnits([]); return }
+    // Klassenwechsel: Auto-Select-State zurücksetzen
+    setUserExpanded(false)
+    setExpandedUnitId(null)
+    setLessonsByUnit({})
+    setActiveSlot(null)
+    expandedUnitRef.current = null
+
     let cancelled = false
     setLoading(true)
     setError(null)
