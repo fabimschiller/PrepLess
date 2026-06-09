@@ -392,22 +392,23 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     if (!savedLessonId) return
     if (!window.confirm('Stunde wirklich löschen?')) return
 
-    const { error: delErr } = await supabase
+    const { error } = await supabase
       .from('lessons')
       .delete()
       .eq('id', savedLessonId)
 
-    if (delErr) {
-      setGenError(delErr.message)
+    if (error) {
+      console.error('Löschen fehlgeschlagen:', error)
+      setGenError(`Fehler beim Löschen: ${error.message}`)
       return
     }
 
-    // Zurücksetzen
+    // Danach State zurücksetzen:
     setContent('')
     setSavedLessonId(null)
     setLessonStatus(null)
-    setTopic(`${slot.unit.title} – Stunde ${slot.slotIndex + 1} von ${slot.unit.estimated_hours}`)
-    onLessonSaved?.(null)
+    setTopic(slot ? `${slot.unit.title} – Stunde ${slot.slotIndex + 1} von ${slot.unit.estimated_hours}` : '')
+    onLessonSaved(null)
   }
 
   // ─── Render ────────────────────────────────────────────────────────────────
