@@ -77,6 +77,10 @@ interface GenerateRequest {
   // Refinement: wenn beide gesetzt → Multi-Turn Konversation
   previousContent?: string;
   refinementRequest?: string;
+  // Vorschlag-Modus: nur Titel generieren
+  suggestionOnly?: boolean;
+  slotIndex?: number;
+  estimatedHours?: number;
 }
 
 function formatPreviousLessons(input: GenerateRequest["previousLessons"]): string {
@@ -173,6 +177,57 @@ Deno.serve(async (req: Request) => {
     return jsonError(400, "Ungültiger JSON-Body.");
   }
 
+  const isSuggestionOnly = body.suggestionOnly === true;
+
+  // Modus 1: Nur Vorschlag generieren
+  if (isSuggestionOnly) {
+    const previousLessonsText = Array.isArray(body.previousLessons)
+      ? body.previousLessons.join(", ")
+      : body.previousLessons ?? "noch keine";
+
+    const suggestionPrompt = `Schlage einen prägnanten Titel (max. 60 Zeichen) für Stunde ${(body.slotIndex ?? 0) + 1} von ${body.estimatedHours ?? 1} der Einheit "${body.curriculumUnitTitle ?? ""}" vor.
+
+Bereits behandelte Stunden: ${previousLessonsText}
+
+Antworte NUR mit dem Titel, ohne Erklärung oder Formatierung.`;
+
+    const suggestionRes = await fetch(ANTHROPIC_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 100,
+        stream: false,
+        system: "Du bist ein Experte für Lehrplan-Struktur. Generiere prägnante, fokussierte Stundentitel für Lehrer.",
+        messages: [{ role: "user", content: suggestionPrompt }],
+      }),
+    });
+
+    if (!suggestionRes.ok) {
+      const errText = await suggestionRes.text().catch(() => "");
+      return jsonError(
+        suggestionRes.status || 502,
+        `Anthropic-API-Fehler: ${errText || suggestionRes.statusText}`
+      );
+    }
+
+    const suggestionData = await suggestionRes.json();
+    const suggestion = suggestionData.content?.[0]?.text?.trim() ?? "";
+
+    return new Response(
+      JSON.stringify({ suggestion }),
+      {
+        status: 200,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      }
+    );
+  }
+
+  // Modus 2: Vollständige Stunde generieren (Streaming)
   const userPrompt = buildUserPrompt(body);
   const isRefinement =
     typeof body.previousContent === "string" &&

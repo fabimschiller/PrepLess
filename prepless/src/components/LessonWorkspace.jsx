@@ -70,6 +70,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   const [saveSuccess, setSaveSuccess] = useState(null)
   const [refinement, setRefinement] = useState('')
   const [refining, setRefining] = useState(false)
+  const [topicSuggesting, setTopicSuggesting] = useState(false)
 
   const abortRef = useRef(null)
 
@@ -129,6 +130,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     setSaveError(null)
     setGenError(null)
     setRefinement('')
+    setTopicSuggesting(false)
 
     if (!slot) {
       setTopic(''); setContent(''); setSavedLessonId(null); setLessonStatus(null)
@@ -146,6 +148,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       setContent('')
       setSavedLessonId(null)
       setLessonStatus(null)
+      // Starte Themenvorschlag für leeren Slot
+      suggestTopic()
     }
   }, [slot?.unit?.id, slot?.slotIndex, slot?.lesson?.id]) // eslint-disable-line
 
@@ -222,6 +226,62 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     }
 
     return { response, signal: controller.signal }
+  }
+
+  async function suggestTopic() {
+    if (!activeClass || !slot) return
+    setTopicSuggesting(true)
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData?.session?.access_token
+      if (!accessToken) throw new Error('Nicht eingeloggt.')
+
+      // Letzte 5 Stunden für Kontext
+      const { data: prevLessons } = await supabase
+        .from('lessons')
+        .select('title, generated_at')
+        .eq('class_id', activeClass.id)
+        .order('generated_at', { ascending: false })
+        .limit(5)
+      const previousLessons = (prevLessons ?? []).map((l) => l.title).filter(Boolean)
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          suggestionOnly: true,
+          slotIndex: slot.slotIndex,
+          curriculumUnitTitle: slot.unit.title,
+          curriculumUnitDescription: slot.unit.description ?? '',
+          estimatedHours: slot.unit.estimated_hours,
+          previousLessons,
+        }),
+      })
+
+      if (!response.ok) {
+        const errText = await response.text().catch(() => '')
+        throw new Error(
+          `Vorschlag fehlgeschlagen (${response.status})${errText ? `: ${errText}` : ''}`
+        )
+      }
+
+      const result = await response.json()
+      if (result.suggestion) {
+        setTopic(result.suggestion)
+      }
+    } catch (err) {
+      console.error('suggestTopic error:', err)
+      // Fehler ignorieren, Nutzer kann manuell eingeben
+    } finally {
+      setTopicSuggesting(false)
+    }
   }
 
   async function handleGenerate() {
@@ -479,10 +539,10 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
         <input
           id="ws-topic"
           type="text"
-          placeholder="z.B. Lineare Funktionen – Steigung erarbeiten"
+          placeholder={topicSuggesting ? "Thema wird vorgeschlagen..." : "z.B. Lineare Funktionen – Steigung erarbeiten"}
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
-          disabled={isStreaming}
+          disabled={isStreaming || topicSuggesting}
           list={!savedLessonId ? 'ws-topic-suggestions' : undefined}
         />
         {!savedLessonId && topicSuggestions.length > 0 && (
