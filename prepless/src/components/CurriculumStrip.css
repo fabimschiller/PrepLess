@@ -153,6 +153,64 @@
   gap: 8px;
 }
 
+/* Wrapper: relativ, damit das Badge absolut positioniert werden kann */
+.slot-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Aktiver Slot-Wrapper statt direktem .slot-active */
+.slot-wrap.slot-active .slot {
+  border: 1.5px solid var(--accent) !important;
+  background: rgba(170, 59, 255, 0.1) !important;
+  box-shadow: 0 0 0 3px rgba(170, 59, 255, 0.18);
+  color: var(--text-h) !important;
+}
+
+.slot-wrap.slot-active .slot-icon {
+  color: var(--accent);
+}
+
+/* Checkmark-Badge */
+.slot-check-btn {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 9px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+  z-index: 2;
+}
+
+.slot-check-btn:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(170, 59, 255, 0.35);
+}
+
+.slot-check-btn.conducted {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+  cursor: default;
+}
+
 .slot {
   display: flex;
   align-items: center;
@@ -234,17 +292,7 @@
   transition: color 0.15s ease;
 }
 
-/* ── Aktiver Slot ── */
-.slot-active {
-  border: 1.5px solid var(--accent) !important;
-  background: rgba(170, 59, 255, 0.1) !important;
-  box-shadow: 0 0 0 3px rgba(170, 59, 255, 0.18);
-  color: var(--text-h) !important;
-}
-
-.slot-active .slot-icon {
-  color: var(--accent);
-}
+/* .slot-active ist jetzt auf .slot-wrap.slot-active definiert (siehe oben) */
 
 .slot-label {
   white-space: nowrap;

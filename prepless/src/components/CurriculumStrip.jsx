@@ -7,6 +7,7 @@ import {
   monthRangeLabel,
   pickCurrentUnit,
 } from '../lib/curriculum'
+import ConductedModal from './ConductedModal'
 import './CurriculumStrip.css'
 
 export default function CurriculumStrip({
@@ -28,8 +29,12 @@ export default function CurriculumStrip({
 
   // Aufgeklappte Einheit
   const [expandedUnitId, setExpandedUnitId] = useState(null)
-  // Hat der User selbst schon was angeklickt? Nur dann nicht mehr auto-expand.
   const [userExpanded, setUserExpanded] = useState(false)
+
+  // Modal: { lessonId, unitId }
+  const [conductedModal, setConductedModal] = useState(null)
+  // Schüler für Modal
+  const [modalStudents, setModalStudents] = useState([])
   // Gespeicherte Stunden je Einheit: { [unit_id]: Lesson[] }
   const [lessonsByUnit, setLessonsByUnit] = useState({})
   // Aktiver Slot: { unitId, slotIndex }
@@ -144,6 +149,32 @@ export default function CurriculumStrip({
     onCurrentUnitChange?.(currentUnit)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUnit?.id])
+
+  async function openConductedModal(lesson, unitId, e) {
+    e.stopPropagation() // Slot-Klick nicht triggern
+    if (!activeClass?.id) return
+    const { data } = await supabase
+      .from('students')
+      .select('id, name')
+      .eq('class_id', activeClass.id)
+      .order('name', { ascending: true })
+    setModalStudents(data ?? [])
+    setConductedModal({ lessonId: lesson.id, unitId })
+  }
+
+  function handleConductedDone(lessonId, unitId, { status, conducted_at }) {
+    // Slot-Farbe sofort aktualisieren
+    setLessonsByUnit((prev) => {
+      const lessons = prev[unitId] ?? []
+      return {
+        ...prev,
+        [unitId]: lessons.map((l) =>
+          l.id === lessonId ? { ...l, status, conducted_at } : l
+        ),
+      }
+    })
+    setConductedModal(null)
+  }
 
   async function handleGenerate() {
     if (!activeClass) return
@@ -260,29 +291,58 @@ export default function CurriculumStrip({
                     const slotClass = lesson
                       ? status === 'conducted' ? 'slot-conducted' : 'slot-planned'
                       : 'slot-empty'
-                    const tooltipText = lesson
+                    const slotTooltip = lesson
                       ? status === 'conducted' ? 'Durchgeführt – öffnen' : 'Geplant – öffnen'
                       : 'Stunde planen'
                     const icon = lesson
                       ? status === 'conducted' ? '✓' : '📝'
                       : '+'
+                    const conducted = status === 'conducted'
+                    const conductedLabel = conducted && lesson.conducted_at
+                      ? `Durchgeführt am ${new Date(lesson.conducted_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}`
+                      : 'Als durchgeführt markieren'
+
                     return (
-                      <button
+                      <div
                         key={index}
-                        type="button"
                         className={[
-                          'slot',
-                          slotClass,
+                          'slot-wrap',
                           isActive(index) ? 'slot-active' : '',
                         ].join(' ')}
-                        onClick={() => handleSlotClick(unit, index)}
-                        title={tooltipText}
                       >
-                        <span className="slot-icon" aria-hidden="true">{icon}</span>
-                        <span className="slot-label">
-                          {lesson ? lesson.title : `Stunde ${index + 1}`}
-                        </span>
-                      </button>
+                        <button
+                          type="button"
+                          className={['slot', slotClass].join(' ')}
+                          onClick={() => handleSlotClick(unit, index)}
+                          title={slotTooltip}
+                        >
+                          <span className="slot-icon" aria-hidden="true">{icon}</span>
+                          <span className="slot-label">
+                            {lesson ? lesson.title : `Stunde ${index + 1}`}
+                          </span>
+                        </button>
+
+                        {/* Checkmark-Badge: nur bei gefüllten Slots */}
+                        {lesson && (
+                          <button
+                            type="button"
+                            className={[
+                              'slot-check-btn',
+                              conducted ? 'conducted' : '',
+                            ].join(' ')}
+                            title={conductedLabel}
+                            disabled={conducted}
+                            onClick={(e) =>
+                              conducted
+                                ? undefined
+                                : openConductedModal(lesson, unit.id, e)
+                            }
+                            aria-label={conductedLabel}
+                          >
+                            ✓
+                          </button>
+                        )}
+                      </div>
                     )
                   })}
                 </div>
@@ -290,6 +350,16 @@ export default function CurriculumStrip({
             )
           })()}
         </>
+      )}
+      {conductedModal && (
+        <ConductedModal
+          lessonId={conductedModal.lessonId}
+          students={modalStudents}
+          onDone={(update) =>
+            handleConductedDone(conductedModal.lessonId, conductedModal.unitId, update)
+          }
+          onClose={() => setConductedModal(null)}
+        />
       )}
     </section>
   )

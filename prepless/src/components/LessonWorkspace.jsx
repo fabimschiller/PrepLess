@@ -10,7 +10,6 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import ConductedModal from './ConductedModal'
 import './LessonWorkspace.css'
 
 // ─── SSE-Parser ───────────────────────────────────────────────────────────────
@@ -112,9 +111,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
   const [topic, setTopic] = useState('')
   const [content, setContent] = useState('')       // generierter / geladener Text
   const [savedLessonId, setSavedLessonId] = useState(null)
-  const [lessonStatus, setLessonStatus] = useState(null)     // 'planned' | 'conducted' | null
-  const [conductedAt, setConductedAt] = useState(null)
-  const [showConductedModal, setShowConductedModal] = useState(false)
+  const [lessonStatus, setLessonStatus] = useState(null)
   const [generating, setGenerating] = useState(false)
   const [genError, setGenError] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -154,7 +151,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
 
     if (!slot) {
       setTopic(''); setContent(''); setSavedLessonId(null)
-      setLessonStatus(null); setConductedAt(null)
+      setLessonStatus(null)
       return
     }
 
@@ -167,13 +164,11 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
       setContent(lesson.content ?? '')
       setSavedLessonId(lesson.id)
       setLessonStatus(lesson.status ?? 'planned')
-      setConductedAt(lesson.conducted_at ?? null)
     } else {
       setTopic(`${unit.title} – Stunde ${slotNum} von ${total}`)
       setContent('')
       setSavedLessonId(null)
       setLessonStatus(null)
-      setConductedAt(null)
     }
   }, [slot?.unit?.id, slot?.slotIndex, slot?.lesson?.id]) // eslint-disable-line
 
@@ -302,13 +297,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
     abortRef.current?.abort()
   }
 
-  function handleConductedDone({ status, conducted_at }) {
-    setLessonStatus(status)
-    setConductedAt(conducted_at)
-    setShowConductedModal(false)
-    onLessonUpdated?.({ id: savedLessonId, status, conducted_at })
-  }
-
   async function handleSave() {
     if (!content.trim() || !activeClass || !slot) return
     setSaving(true); setSaveError(null); setSaveSuccess(null)
@@ -422,38 +410,9 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved, onLe
           >
             {saving ? 'Speichert…' : '💾 Stunde speichern'}
           </button>
-
-          {/* Als durchgeführt markieren */}
-          {savedLessonId && lessonStatus !== 'conducted' && (
-            <button
-              className="btn-secondary"
-              type="button"
-              onClick={() => setShowConductedModal(true)}
-            >
-              ✓ Als durchgeführt markieren
-            </button>
-          )}
-          {savedLessonId && lessonStatus === 'conducted' && conductedAt && (
-            <span className="workspace-conducted-label">
-              ✓ Durchgeführt am {new Date(conductedAt).toLocaleDateString('de-DE', {
-                day: '2-digit', month: '2-digit', year: 'numeric',
-              })}
-            </span>
-          )}
-
           {saveError && <span className="workspace-save-error">{saveError}</span>}
           {saveSuccess && <span className="workspace-save-ok">{saveSuccess}</span>}
         </div>
-      )}
-
-      {/* Modal: Stunde durchgeführt */}
-      {showConductedModal && savedLessonId && (
-        <ConductedModal
-          lessonId={savedLessonId}
-          students={students}
-          onDone={handleConductedDone}
-          onClose={() => setShowConductedModal(false)}
-        />
       )}
 
       {/* Refinement */}
