@@ -12,7 +12,7 @@ import "@supabase/functions-js/edge-runtime.d.ts";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const MODEL = "claude-sonnet-4-6";
-const MAX_TOKENS = 2500;
+const MAX_TOKENS = 4000;
 
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",

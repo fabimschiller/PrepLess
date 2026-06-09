@@ -90,6 +90,25 @@
   font-weight: 500;
 }
 
+.btn-delete-text {
+  font-size: 13.5px;
+  color: #888;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.btn-delete-text:hover {
+  color: #d32f2f;
+}
+
+.btn-delete-text:active {
+  color: #b71c1c;
+}
+
 .workspace-conducted-label {
   font-size: 13.5px;
   font-weight: 600;

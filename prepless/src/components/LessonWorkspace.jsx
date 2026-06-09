@@ -388,6 +388,28 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     onLessonSaved?.(lesson)
   }
 
+  async function handleDelete() {
+    if (!savedLessonId) return
+    if (!window.confirm('Stunde wirklich löschen?')) return
+
+    const { error: delErr } = await supabase
+      .from('lessons')
+      .delete()
+      .eq('id', savedLessonId)
+
+    if (delErr) {
+      setGenError(delErr.message)
+      return
+    }
+
+    // Zurücksetzen
+    setContent('')
+    setSavedLessonId(null)
+    setLessonStatus(null)
+    setTopic(`${slot.unit.title} – Stunde ${slot.slotIndex + 1} von ${slot.unit.estimated_hours}`)
+    onLessonSaved?.(null)
+  }
+
   // ─── Render ────────────────────────────────────────────────────────────────
 
   if (!slot) {
@@ -481,20 +503,29 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
         </div>
       )}
 
-      {hasContent && !isStreaming && (
-        <div className="workspace-save-row">
-          <button
-            className="btn-primary"
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? 'Speichert…' : '💾 Stunde speichern'}
-          </button>
-          {saveError && <span className="workspace-save-error">{saveError}</span>}
-          {saveSuccess && <span className="workspace-save-ok">{saveSuccess}</span>}
-        </div>
-      )}
+       {hasContent && !isStreaming && (
+         <div className="workspace-save-row">
+           <button
+             className="btn-primary"
+             type="button"
+             onClick={handleSave}
+             disabled={saving}
+           >
+             {saving ? 'Speichert…' : '💾 Stunde speichern'}
+           </button>
+           {saveError && <span className="workspace-save-error">{saveError}</span>}
+           {saveSuccess && <span className="workspace-save-ok">{saveSuccess}</span>}
+           {savedLessonId && (
+             <button
+               className="btn-delete-text"
+               type="button"
+               onClick={handleDelete}
+             >
+               Löschen
+             </button>
+           )}
+         </div>
+       )}
 
       {hasContent && (
         <div className="workspace-refine">
