@@ -52,6 +52,8 @@ export default function App() {
           element={session ? <Navigate to="/unterricht" replace /> : <Login />}
         />
 
+        <Route path="/stunde/:lessonId" element={<StundenView />} />
+
         <Route
           element={
             <RequireAuth session={session}>
@@ -65,10 +67,9 @@ export default function App() {
            <Route path="/unterricht" element={<Unterricht />} />
            <Route path="/verwaltung" element={<Verwaltung />} />
            <Route path="/mein-lernen" element={<MeinLernen />} />
-           <Route path="/stunde/:lessonId" element={<StundenView />} />
            <Route path="*" element={<Navigate to="/unterricht" replace />} />
          </Route>
-      </Routes>
+       </Routes>
     </BrowserRouter>
   )
 }
