@@ -649,23 +649,29 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
             {saving ? 'Speichert…' : '💾 Stunde speichern'}
           </button>
         )}
+         {console.log('RENDER: Material button check - savedLessonId:', savedLessonId, 'isStreaming:', isStreaming)}
          {savedLessonId && !isStreaming && (
-           <button
-             className="btn-primary"
-             type="button"
-             onClick={() => {
-               console.log('Material button clicked, materials:', materials, 'showMaterialsModal:', showMaterialsModal)
-               if (!materials) {
-                 suggestMaterials()
-               } else {
-                 console.log('Setting showMaterialsModal to true')
-                 setShowMaterialsModal(true)
-               }
-             }}
-             disabled={materialsLoading}
-           >
-             {materialsLoading ? 'Materialien werden vorgeschlagen…' : '📚 Material'}
-           </button>
+           <>
+             {console.log('RENDER: Material button WILL RENDER')}
+             <button
+               className="btn-primary"
+               type="button"
+               onClick={(e) => {
+                 console.log('🔴 Material button CLICKED!', e)
+                 console.log('Material button clicked, materials:', materials, 'showMaterialsModal:', showMaterialsModal)
+                 if (!materials) {
+                   console.log('Materials sind null, rufe suggestMaterials auf')
+                   suggestMaterials()
+                 } else {
+                   console.log('Materials existieren, setze showMaterialsModal to true')
+                   setShowMaterialsModal(true)
+                 }
+               }}
+               disabled={materialsLoading}
+             >
+               {materialsLoading ? 'Materialien werden vorgeschlagen…' : '📚 Material'}
+             </button>
+           </>
          )}
         <div className="workspace-actions-spacer" />
         {hasContent && !isStreaming && (
