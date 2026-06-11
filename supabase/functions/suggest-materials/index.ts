@@ -117,22 +117,25 @@ ${body.lessonContent}
 
 Schlage passende Materialien vor, die Lehrkräfte verwenden oder Schülern mitgeben können.`;
 
-  const systemPrompt = `Du bist ein Bildungsexperte mit großer Kenntnis deutschsprachiger Bildungsmedien. Schlage zu der vorliegenden Unterrichtsstunde passende Materialien vor, die Lehrkräfte verwenden oder Schülern mitgeben können.
+  const systemPrompt = `Du bist ein Bildungsexperte der passendes Lernmaterial für Schüler empfiehlt. Schlage zu der vorliegenden Unterrichtsstunde ergänzendes Material vor, das Schüler selbstständig nutzen können - zum Vertiefen, Nachschlagen oder Weiterlernen.
 
-WICHTIG: Erfinde KEINE konkreten URLs oder Titel. Gib stattdessen Suchempfehlungen mit konkreten Suchbegriffen und Hinweisen, was die Lehrkraft suchen soll.
+WICHTIG: 
+- Die Vorschläge sind FÜR SCHÜLER, nicht für Lehrkräfte
+- Kein didaktisches Material, keine Unterrichtsmethoden, keine Lehrerhandbücher
+- Stattdessen: verständliche Erklärvideos, spannende Artikel, interaktive Übungen, anschauliche Podcasts die Schüler selbst konsumieren können
+- Sprache und Niveau sollen zur Altersgruppe passen (Jahrgang ${body.grade}, ${body.schoolType})
+- Erfinde KEINE konkreten URLs - gib Suchempfehlungen mit konkreten Suchbegriffen
 
-Strukturiere die Antwort als JSON-Objekt mit diesen Kategorien:
+Antworte AUSSCHLIESSLICH mit dem JSON-Objekt ohne Markdown:
 {
-  "videos": [{ "beschreibung": "...", "suchbegriff": "...", "plattform": "YouTube / Mediathek / ..." }],
-  "artikel": [{ "beschreibung": "...", "suchbegriff": "...", "quelle": "z.B. SPIEGEL Wissen, Planet Wissen, etc." }],
-  "podcasts": [{ "beschreibung": "...", "suchbegriff": "...", "plattform": "Spotify / ARD Audiothek / ..." }],
-  "uebungsmaterial": [{ "beschreibung": "...", "suchbegriff": "...", "quelle": "4teachers / lehrermarktplatz / etc." }]
+  "videos": [{ "beschreibung": "...", "suchbegriff": "...", "plattform": "YouTube / funk / ZDFmediathek" }],
+  "artikel": [{ "beschreibung": "...", "suchbegriff": "...", "quelle": "z.B. Klexikon, Spektrum, SWR Wissen" }],
+  "podcasts": [{ "beschreibung": "...", "suchbegriff": "...", "plattform": "Spotify / ARD Audiothek" }],
+  "uebungsmaterial": [{ "beschreibung": "...", "suchbegriff": "...", "quelle": "Khan Academy / Mathebuch.de / etc." }]
 }
 
 Pro Kategorie 2-4 Vorschläge.
 
-KRITISCH: Antworte AUSSCHLIESSLICH mit dem JSON-Objekt. 
-Kein Markdown, keine Codeblöcke, keine Erklärung, keine zusätzliche Zwischentexte.
 Beginne mit { und ende mit }.`;
 
   try {
