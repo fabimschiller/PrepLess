@@ -80,6 +80,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   const [learningResources, setLearningResources] = useState(null)
   const [learningLoading, setLearningLoading] = useState(false)
   const [showLearningModal, setShowLearningModal] = useState(false)
+  const [viewedResources, setViewedResources] = useState(new Set())
+  const [viewingResourceId, setViewingResourceId] = useState(null)
 
   const abortRef = useRef(null)
 
@@ -97,6 +99,13 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [showMaterialsModal, showLearningModal])
+
+  // Load viewed resources wenn Learning-Modal öffnet
+  useEffect(() => {
+    if (showLearningModal) {
+      loadViewedResources()
+    }
+  }, [showLearningModal])
 
   // Für den Generate-Payload: Schüler + letzte Beobachtungen
   useEffect(() => {
@@ -612,6 +621,73 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     }
   }
 
+  async function loadViewedResources() {
+    if (!savedLessonId) return
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const userId = sessionData?.session?.user?.id
+      if (!userId) return
+
+      const { data: progressData } = await supabase
+        .from('learning_progress')
+        .select('resource_title')
+        .eq('user_id', userId)
+        .eq('lesson_id', savedLessonId)
+
+      if (progressData) {
+        const titles = new Set(progressData.map(p => p.resource_title))
+        setViewedResources(titles)
+      }
+    } catch (err) {
+      console.error('Error loading viewed resources:', err)
+    }
+  }
+
+  async function markAsViewed(resource) {
+    setViewingResourceId(resource.title)
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const userId = sessionData?.session?.user?.id
+      if (!userId) throw new Error('Nicht eingeloggt')
+
+      // Insert in learning_progress
+      const { error: insertError } = await supabase
+        .from('learning_progress')
+        .insert({
+          user_id: userId,
+          lesson_id: savedLessonId,
+          resource_title: resource.title,
+          resource_type: resource.typ,
+          xp_earned: resource.xp,
+        })
+
+      if (insertError) throw insertError
+
+      // Update profiles
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('total_xp')
+        .eq('id', userId)
+        .single()
+
+      if (profileData) {
+        const newTotal = (profileData.total_xp || 0) + resource.xp
+        await supabase
+          .from('profiles')
+          .update({ total_xp: newTotal })
+          .eq('id', userId)
+      }
+
+      // Mark as viewed locally
+      setViewedResources(prev => new Set([...prev, resource.title]))
+    } catch (err) {
+      console.error('Error marking resource as viewed:', err)
+      setGenError(err instanceof Error ? err.message : 'Fehler beim Speichern')
+    } finally {
+      setViewingResourceId(null)
+    }
+  }
+
   // ─── Render ────────────────────────────────────────────────────────────────
 
   if (!slot) {
@@ -960,7 +1036,10 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
                 <>
                   <div className="learning-resources-list">
                     {learningResources.map((resource, idx) => (
-                      <div key={`resource-${idx}`} className="learning-resource-item">
+                      <div
+                        key={`resource-${idx}`}
+                        className={`learning-resource-item ${viewedResources.has(resource.title) ? 'viewed' : ''}`}
+                      >
                         <div className="learning-resource-header">
                           <h3 className="learning-resource-title">{resource.title}</h3>
                           <span className="learning-resource-xp">+{resource.xp} XP</span>
@@ -983,6 +1062,16 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
                         {resource.plattform && (
                           <p className="learning-resource-plattform">📍 {resource.plattform}</p>
                         )}
+                        <div className="learning-resource-action">
+                          <button
+                            type="button"
+                            className="learning-mark-viewed-btn"
+                            onClick={() => markAsViewed(resource)}
+                            disabled={viewedResources.has(resource.title) || viewingResourceId === resource.title}
+                          >
+                            {viewedResources.has(resource.title) ? '✓ Gesehen' : `+ ${resource.xp} XP · Gesehen`}
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>

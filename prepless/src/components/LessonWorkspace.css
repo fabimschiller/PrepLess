@@ -647,3 +647,35 @@
   font-size: 12px;
   color: var(--text-muted);
 }
+
+.learning-resource-action {
+  margin-top: 12px;
+  display: flex;
+}
+
+.learning-mark-viewed-btn {
+  padding: 6px 12px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.learning-mark-viewed-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+.learning-mark-viewed-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.learning-resource-item.viewed {
+  opacity: 0.6;
+  background: var(--border);
+}
