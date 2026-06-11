@@ -76,13 +76,23 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   const [aiSuggestions, setAiSuggestions] = useState([])
   const [materials, setMaterials] = useState(null)
   const [materialsLoading, setMaterialsLoading] = useState(false)
+  const [showMaterialsModal, setShowMaterialsModal] = useState(false)
 
   const abortRef = useRef(null)
 
-  // Debug: aiSuggestions tracking
+  // Modal-Close: Escape-Taste
   useEffect(() => {
-    console.log('[LessonWorkspace] aiSuggestions changed:', aiSuggestions)
-  }, [aiSuggestions])
+    if (!showMaterialsModal) return
+    
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setShowMaterialsModal(false)
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [showMaterialsModal])
 
   // Für den Generate-Payload: Schüler + letzte Beobachtungen
   useEffect(() => {
@@ -659,12 +669,18 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
          )}
          {savedLessonId && !isStreaming && (
            <button
-             className="btn-secondary"
+             className="btn-primary"
              type="button"
-             onClick={suggestMaterials}
+             onClick={() => {
+               if (!materials) {
+                 suggestMaterials()
+               } else {
+                 setShowMaterialsModal(true)
+               }
+             }}
              disabled={materialsLoading}
            >
-             {materialsLoading ? 'Materialien werden vorgeschlagen…' : '📚 Materialien vorschlagen'}
+             {materialsLoading ? 'Materialien werden vorgeschlagen…' : '📚 Material'}
            </button>
          )}
        </div>
@@ -704,21 +720,47 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
              <button
                className="btn-delete-text"
                type="button"
-               onClick={() => { 
-                 console.log('BUTTON CLICKED (bottom) - savedLessonId:', savedLessonId)
-                 alert('click!'); 
-                 handleDelete(); 
-               }}
+               onClick={handleDelete}
              >
                Löschen
+             </button>
+           )}
+           {savedLessonId && !isStreaming && (
+             <button
+               className="btn-primary"
+               type="button"
+               onClick={() => {
+                 if (!materials) {
+                   suggestMaterials()
+                 } else {
+                   setShowMaterialsModal(true)
+                 }
+               }}
+               disabled={materialsLoading}
+             >
+               {materialsLoading ? 'Materialien werden vorgeschlagen…' : '📚 Material'}
              </button>
            )}
          </div>
        )}
 
-      {/* Material-Vorschläge */}
-      {materials && (
-        <div className="materials-section">
+      {/* Material-Modal Overlay */}
+      {showMaterialsModal && materials && (
+        <div className="materials-modal-overlay" onClick={() => setShowMaterialsModal(false)}>
+          <div className="materials-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="materials-modal-header">
+              <h2>📚 Ergänzendes Material zur Stunde</h2>
+              <button
+                className="materials-modal-close"
+                type="button"
+                onClick={() => setShowMaterialsModal(false)}
+                aria-label="Schließen"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="materials-modal-content">
           <h3 className="materials-title">📚 Lernmaterialien zur Stunde</h3>
 
           {materials.videos && materials.videos.length > 0 && (
@@ -808,6 +850,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
               </div>
             </div>
           )}
+            </div>
+          </div>
         </div>
       )}
 
