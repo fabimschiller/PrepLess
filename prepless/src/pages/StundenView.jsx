@@ -25,17 +25,24 @@ export default function StundenView() {
 
   async function loadLesson() {
     if (!lessonId) {
+      console.log('[StundenView] Keine Stunden-ID vorhanden')
       setError('Keine Stunden-ID vorhanden')
       setLoading(false)
       return
     }
 
+    console.log('[StundenView] Lade Lektion mit ID:', lessonId)
+
     try {
+      console.log('[StundenView] Rufe supabase.from(lessons).select auf...')
+      
       const { data, error: fetchError } = await supabase
         .from('lessons')
         .select('*')
         .eq('id', lessonId)
         .single()
+
+      console.log('[StundenView] Supabase-Antwort:', { data, fetchError })
 
       if (fetchError) throw fetchError
       if (!data) throw new Error('Stunde nicht gefunden')
