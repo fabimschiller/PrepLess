@@ -379,12 +379,12 @@ export default function CurriculumStrip({
                            onClick={() => handleSlotClick(unit, index)}
                            title={lesson ? lesson.title : slotTooltip}
                          >
-                           <span className="slot-icon" aria-hidden="true">{icon}</span>
+                           {/* Icon nur für leere Slots */}
+                           {!lesson && <span className="slot-icon" aria-hidden="true">{icon}</span>}
+                           {/* Titel nur für gefüllte Slots, vollständig ohne Kürzung */}
                            {lesson && (
                              <span className="slot-label" title={lesson.title}>
-                               {lesson.title.length > 25 
-                                 ? lesson.title.substring(0, 25) + '...' 
-                                 : lesson.title}
+                               {lesson.title}
                              </span>
                            )}
                          </button>
