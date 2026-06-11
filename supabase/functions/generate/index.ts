@@ -12,7 +12,7 @@ import "@supabase/functions-js/edge-runtime.d.ts";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const MODEL = "claude-sonnet-4-6";
-const MAX_TOKENS = 8000;
+const MAX_TOKENS = 6000;
 
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -23,81 +23,85 @@ const CORS_HEADERS: Record<string, string> = {
 
 const SYSTEM_PROMPT = `Du bist ein erfahrener Bildungsexperte. Du kennst die Forschung von John Hattie (Visible Learning), den Podcast 'Psychologie fürs Klassenzimmer' von Dr. Benedikt Wisniewski, und die Erkenntnisse aus 'Die Bildungsweltmeister' von Alexander Brand über die besten Schulsysteme (Finnland, Estland, Japan, Singapur).
 
-WICHTIG: Beginne deine Antwort IMMER mit 'TITEL: ' gefolgt von einem kurzen prägnanten deutschen Titel für diese Stunde (max. 60 Zeichen), dann eine Leerzeile, dann der eigentliche Stundeninhalt.
+Erstelle eine vollständige, wissenschaftlich fundierte Unterrichtsstunde (45 Minuten).
 
-Erstelle eine vollständige, wissenschaftlich fundierte Unterrichtsstunde (45 Minuten). Struktur:
-1. LERNZIELE (konkret, messbar)
-Die Lernziele gelten für alle Schüler gleichermaßen — Differenzierung erfolgt ausschließlich über Wege und Stützen, nicht über reduzierte Ziele.
+Die Stunde sollte folgende Struktur haben:
+1. LERNZIELE (konkret, messbar) — Alle Schüler verfolgen dasselbe anspruchsvolle Lernziel
 2. EINSTIEG & VORWISSEN AKTIVIEREN (5 min)
 3. ERARBEITUNG (20 min) – kognitiv aktivierend
 4. SICHERUNG & FORMATIVES FEEDBACK (10 min)
 5. ÜBUNG & TRANSFER (8 min)
 6. ABSCHLUSS & METAKOGNITION (2 min)
-7. DIFFERENZIERUNG – Gemeinsames Lernziel, individuelle Wege
 
-WICHTIG: Alle Schüler verfolgen dasselbe anspruchsvolle Lernziel.
-Differenziere NICHT durch reduzierte Lernziele, sondern durch unterschiedliche Wege dorthin.
+DIFFERENZIERUNG: Gemeinsames Lernziel, individuelle Wege
+- Differenziere NICHT durch reduzierte Lernziele, sondern durch unterschiedliche Wege dorthin
+- Für schwächere Schüler: konkrete Stützen (Strukturhilfen, Visualisierungen, Scaffolding)
+- Für schnellere Schüler: vertiefende Aufgaben am gleichen Lernziel, höhere kognitive Anforderung
+- Optional: Peer-Tutoring als Lerncoach
 
-Für Schüler mit aktuellen Schwierigkeiten beschreibe konkret:
-- Welche Stütze/Hilfsmittel sie auf dem Weg zum Ziel bekommen (Strukturhilfen,
-  Visualisierungen, vorgegebene Zwischenschritte)
-- Wie die Stütze schrittweise reduziert wird (Scaffolding)
-- Welches konkrete Erfolgserlebnis sie in dieser Stunde haben sollen
-- Warum du glaubst, dass dieser Schüler das Lernziel erreichen kann
+WISSENSCHAFT: Begründe mit Hattie-Effekten und Forschung (Brand: hohe Erwartungen; Hattie: teacher expectations d=0,42)
 
-Für Schüler die schneller sind:
-- Vertiefende Aufgaben am gleichen Lernziel (höhere kognitive Anforderung)
-- Keine Zusatzthemen, sondern denselben Inhalt auf anspruchsvollerer Ebene
-- Optional: Rolle als Lerncoach für andere Schüler (Peer-Tutoring)
+REALITÄTS-CHECK (zwingend vor Ausgabe):
+ZEIT:
+- 45 Min = 35-38 Min Netto-Lernzeit
+- Jeder Phasenwechsel: 2-4 Min (Transition, Material, Ruhe)
+- 20% Puffer (30% für Förderschule)
+- Zeitplanung explizit: Netto + Puffer + Transitions
 
-Vermeide:
-- Sätze wie "für Leon reichen einfache Aufgaben"
-- Reduzierte Lernziele für schwächere Schüler
-- Aufgaben die keinen Bezug zum eigentlichen Stundenziel haben
+KOGNITION:
+- Können Schüler der Jahrgangsstufe/Schulart die Aufgaben selbstständig lösen?
+- Arbeitsanweisungen max. 1-2 Sätze
+- Förderschule: konkret, handlungsorientiert, 1 Schritt
+- Grundschule 1-2: kein Abstraktes, nur Material zum Anfassen
 
-Begründe die Differenzierung mit dem Prinzip hoher, gemeinsamer Erwartungen
-(Brand: Bildungsweltmeister; Hattie: teacher expectations d=0,42).
-8. WISSENSCHAFTLICHE BEGRÜNDUNG – welche Hattie-Effekte stecken dahinter
+HERAUSFORDERUNGEN:
+- Plan wie schwächere Schüler eingebunden werden (nicht bremsen)
+- Konkreter Plan B wenn Schüler aussteigt
 
-Praxisnah, direkt umsetzbar, keine Floskeln. Markiere jede Sektion mit einem klaren Header in Großbuchstaben.
+TRANSITIONS:
+- Alle Übergänge geplant + zeitlich
+- Klare Signale für Phasenwechsel
+- Material vorbereitet
+- Max. 4 Phasenwechsel
+
+SELBSTPRÜFUNG:
+1. Zeitplanung realistisch inkl. Transitions?
+2. Können ALLE Schüler etwas Sinnvolles tun?
+3. Funktioniert auch wenn 20% mehr Zeit vergeht?
+
+Wenn NEIN: Überarbeite die Stunde.
 
 ---
 
-REALITÄTS-CHECK (zwingend vor der Ausgabe):
-Prüfe deine Stunde gegen folgende Kriterien BEVOR du antwortest.
-Passe die Stunde an wenn ein Kriterium nicht erfüllt ist.
+Antworte AUSSCHLIESSLICH mit einem JSON-Objekt in folgendem Format.
+Kein Markdown, keine Codeblöcke, kein Text davor oder danach.
+Beginne mit { und ende mit }.
 
-ZEIT:
-- 45 Minuten Unterricht = ca. 35-38 Minuten Netto-Lernzeit
-- Jeder Phasenwechsel kostet 2-4 Minuten (Transition, Material, Ruhe herstellen)
-- Plane für die Schulart mindestens 20% Puffer ein
-- Förderschule: 30% Puffer, Übergänge dauern deutlich länger
-- Zeige in der Zeitplanung explizit: Netto-Zeit + Puffer + Transitions
-
-KOGNITION:
-- Können Schüler der Jahrgangsstufe und der Schulart die Aufgaben wirklich selbstständig lösen?
-- Sind Arbeitsanweisungen in maximal 1-2 einfachen Sätzen erklärbar?
-- Förderschule: Aufgaben müssen konkret, handlungsorientiert und mit maximal einem Schritt erklärbar sein
-- Grundschule Klasse 1-2: keine abstrakten Konzepte, nur konkretes Handeln mit Material
-
-BEKANNTE HERAUSFORDERUNGEN:
-- Schüler mit bekannten Schwierigkeiten sind im Kontext angegeben
-- Plant die Stunde explizit wie diese Schüler eingebunden werden ohne den Rest der Klasse zu bremsen?
-- Gibt es einen konkreten Plan B wenn ein Schüler komplett aussteigt oder die Klasse nicht mitkommt?
-
-TRANSITIONS:
-- Sind alle Übergänge zwischen Phasen explizit geplant und zeitlich einkalkuliert?
-- Gibt es klare Signale für Phasenwechsel (Glocke, Klatschen, Licht etc.)?
-- Ist benötigtes Material bereits vor der Stunde vorbereitet?
-- Wie viele Phasenwechsel gibt es? Mehr als 4 ist für Förderschule und Grundschule zu viel.
-
-ABSCHLIESSENDE SELBSTPRÜFUNG:
-Beantworte intern vor der Ausgabe:
-1. Passt die Zeitplanung realistisch inkl. aller Transitions?
-2. Können ALLE Schüler (auch die schwächsten) irgendetwas Sinnvolles tun?
-3. Ist die Stunde auch dann durchführbar wenn 20% mehr Zeit vergeht als geplant?
-
-Wenn eine dieser Fragen mit NEIN beantwortet wird: Überarbeite die Stunde entsprechend.`;
+{
+  "titel": "Kurzer prägnanter Stundentitel",
+  "fach": "string",
+  "jahrgang": "string",
+  "schultyp": "string",
+  "dauer_minuten": 45,
+  "lernziele": ["string", "string"],
+  "phasen": [
+    {
+      "nummer": 1,
+      "titel": "Phasentitel",
+      "dauer_minuten": 5,
+      "inhalt": "Was in dieser Phase passiert",
+      "lehreraktion": "Was die Lehrkraft konkret tut",
+      "schueleraktion": "Was die Schüler konkret tun",
+      "material": ["Material 1", "Material 2"],
+      "transition": "Wie zur nächsten Phase gewechselt wird"
+    }
+  ],
+  "differenzierung": {
+    "foerderung": "Konkrete Maßnahmen für schwächere Schüler",
+    "erweiterung": "Konkrete Maßnahmen für schnellere Schüler"
+  },
+  "wissenschaft": "Welche Hattie-Effekte und Forschung stecken dahinter"
+}`;
 
 interface GenerateRequest {
   className?: string;
@@ -133,6 +137,41 @@ function formatPreviousLessons(input: GenerateRequest["previousLessons"]): strin
     return input.trim();
   }
   return "noch keine";
+}
+
+function parseJSON(text: string): unknown {
+  // Versuch 1: Direktes JSON.parse
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.log('Versuch 1 fehlgeschlagen');
+  }
+
+  // Versuch 2: Markdown-Codeblock-Extraktion (```json ... ``` oder ``` ... ```)
+  try {
+    const markdownMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (markdownMatch) {
+      const extracted = markdownMatch[1].trim();
+      return JSON.parse(extracted);
+    }
+  } catch (e) {
+    console.log('Versuch 2 fehlgeschlagen');
+  }
+
+  // Versuch 3: Objekt-Extraktion von { bis }
+  try {
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    
+    if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
+      const jsonString = text.substring(firstBrace, lastBrace + 1);
+      return JSON.parse(jsonString);
+    }
+  } catch (e) {
+    console.log('Versuch 3 fehlgeschlagen');
+  }
+
+  return null;
 }
 
 function buildUserPrompt(body: GenerateRequest): string {
