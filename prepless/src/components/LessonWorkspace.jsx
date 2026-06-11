@@ -762,6 +762,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
             <div className="materials-modal-content">
               {materialsLoading ? (
                 <div className="materials-loading">
+                  <div className="spinner"></div>
                   <p>Materialien werden vorgeschlagen…</p>
                 </div>
               ) : !materials ? (
