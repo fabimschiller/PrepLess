@@ -47,6 +47,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public Routes – kein Auth erforderlich */}
         <Route
           path="/login"
           element={session ? <Navigate to="/unterricht" replace /> : <Login />}
@@ -54,6 +55,7 @@ export default function App() {
 
         <Route path="/stunde/:lessonId" element={<StundenView />} />
 
+        {/* Protected Routes – Auth erforderlich */}
         <Route
           element={
             <RequireAuth session={session}>
@@ -67,8 +69,12 @@ export default function App() {
            <Route path="/unterricht" element={<Unterricht />} />
            <Route path="/verwaltung" element={<Verwaltung />} />
            <Route path="/mein-lernen" element={<MeinLernen />} />
-           <Route path="*" element={<Navigate to="/unterricht" replace />} />
          </Route>
+
+        {/* Wildcard – muss nach allen anderen Routes kommen */}
+        <Route path="*" element={
+          session ? <Navigate to="/unterricht" replace /> : <Navigate to="/login" replace />
+        } />
        </Routes>
     </BrowserRouter>
   )
