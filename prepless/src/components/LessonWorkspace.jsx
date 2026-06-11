@@ -77,22 +77,26 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   const [materials, setMaterials] = useState(null)
   const [materialsLoading, setMaterialsLoading] = useState(false)
   const [showMaterialsModal, setShowMaterialsModal] = useState(false)
+  const [learningResources, setLearningResources] = useState(null)
+  const [learningLoading, setLearningLoading] = useState(false)
+  const [showLearningModal, setShowLearningModal] = useState(false)
 
   const abortRef = useRef(null)
 
   // Modal-Close: Escape-Taste
   useEffect(() => {
-    if (!showMaterialsModal) return
+    if (!showMaterialsModal && !showLearningModal) return
     
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        setShowMaterialsModal(false)
+        if (showMaterialsModal) setShowMaterialsModal(false)
+        if (showLearningModal) setShowLearningModal(false)
       }
     }
     
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [showMaterialsModal])
+  }, [showMaterialsModal, showLearningModal])
 
   // Für den Generate-Payload: Schüler + letzte Beobachtungen
   useEffect(() => {
@@ -564,6 +568,50 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     }
   }
 
+  async function suggestLearning() {
+    if (!content.trim() || !activeClass) return
+    setLearningLoading(true)
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData?.session?.access_token
+      if (!accessToken) throw new Error('Nicht eingeloggt.')
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/suggest-learning`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          lessonContent: content,
+          lessonTitle: topic,
+          subject: activeClass.subject,
+          grade: activeClass.grade,
+          schoolType: activeClass.school_type,
+        }),
+      })
+
+      if (!response.ok) {
+        const errText = await response.text().catch(() => '')
+        throw new Error(
+          `Fortbildungsvorschlag fehlgeschlagen (${response.status})${errText ? `: ${errText}` : ''}`
+        )
+      }
+
+      const result = await response.json()
+      setLearningResources(result.resources)
+    } catch (err) {
+      console.error('suggestLearning error:', err)
+      setGenError(err instanceof Error ? err.message : 'Fehler beim Laden der Fortbildungsressourcen')
+    } finally {
+      setLearningLoading(false)
+    }
+  }
+
   // ─── Render ────────────────────────────────────────────────────────────────
 
   if (!slot) {
@@ -664,7 +712,22 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
              {materialsLoading ? 'Materialien werden vorgeschlagen…' : '📚 Material'}
            </button>
          )}
-        <div className="workspace-actions-spacer" />
+         {savedLessonId && !isStreaming && (
+           <button
+             className="btn-primary"
+             type="button"
+             onClick={() => {
+               if (!learningResources) {
+                 suggestLearning()
+               }
+               setShowLearningModal(true)
+             }}
+             disabled={learningLoading}
+           >
+             {learningLoading ? 'Ressourcen werden vorgeschlagen…' : '🎓 Fortbildung'}
+           </button>
+         )}
+         <div className="workspace-actions-spacer" />
         {hasContent && !isStreaming && (
           <button
             className="btn-secondary"
@@ -860,6 +923,69 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
               </div>
              </div>
            )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Learning-Modal Overlay */}
+      {showLearningModal && (
+        <div className="learning-modal-overlay" onClick={() => setShowLearningModal(false)}>
+          <div className="learning-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="learning-modal-header">
+              <h2>🎓 Fortbildungsressourcen für Lehrkräfte</h2>
+              <button
+                className="learning-modal-close"
+                type="button"
+                onClick={() => setShowLearningModal(false)}
+                aria-label="Schließen"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="learning-modal-content">
+              {learningLoading ? (
+                <div className="learning-loading">
+                  <div className="spinner"></div>
+                  <p>Ressourcen werden vorgeschlagen…</p>
+                </div>
+              ) : !learningResources || learningResources.length === 0 ? (
+                <div className="learning-error">
+                  <p>Keine Ressourcen geladen.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="learning-resources-list">
+                    {learningResources.map((resource, idx) => (
+                      <div key={`resource-${idx}`} className="learning-resource-item">
+                        <div className="learning-resource-header">
+                          <h3 className="learning-resource-title">{resource.title}</h3>
+                          <span className="learning-resource-xp">+{resource.xp} XP</span>
+                        </div>
+                        <p className="learning-resource-description">{resource.beschreibung}</p>
+                        <div className="learning-resource-meta">
+                          <span className="learning-resource-type">{resource.typ}</span>
+                          <span className="learning-resource-time">⏱ {resource.minuten} Min</span>
+                        </div>
+                        <div className="learning-resource-search">
+                          <span className="learning-resource-search-term">{resource.suchbegriff}</span>
+                          <button
+                            type="button"
+                            className="learning-search-btn"
+                            onClick={() => window.open(`https://google.com/search?q=${encodeURIComponent(resource.suchbegriff)}`, '_blank')}
+                          >
+                            🔍 Suchen
+                          </button>
+                        </div>
+                        {resource.plattform && (
+                          <p className="learning-resource-plattform">📍 {resource.plattform}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </>
               )}
             </div>
