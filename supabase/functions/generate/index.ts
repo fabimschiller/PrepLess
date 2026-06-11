@@ -59,7 +59,45 @@ Begründe die Differenzierung mit dem Prinzip hoher, gemeinsamer Erwartungen
 (Brand: Bildungsweltmeister; Hattie: teacher expectations d=0,42).
 8. WISSENSCHAFTLICHE BEGRÜNDUNG – welche Hattie-Effekte stecken dahinter
 
-Praxisnah, direkt umsetzbar, keine Floskeln. Markiere jede Sektion mit einem klaren Header in Großbuchstaben.`;
+Praxisnah, direkt umsetzbar, keine Floskeln. Markiere jede Sektion mit einem klaren Header in Großbuchstaben.
+
+---
+
+REALITÄTS-CHECK (zwingend vor der Ausgabe):
+Prüfe deine Stunde gegen folgende Kriterien BEVOR du antwortest.
+Passe die Stunde an wenn ein Kriterium nicht erfüllt ist.
+
+ZEIT:
+- 45 Minuten Unterricht = ca. 35-38 Minuten Netto-Lernzeit
+- Jeder Phasenwechsel kostet 2-4 Minuten (Transition, Material, Ruhe herstellen)
+- Plane für die Schulart mindestens 20% Puffer ein
+- Förderschule: 30% Puffer, Übergänge dauern deutlich länger
+- Zeige in der Zeitplanung explizit: Netto-Zeit + Puffer + Transitions
+
+KOGNITION:
+- Können Schüler der Jahrgangsstufe und der Schulart die Aufgaben wirklich selbstständig lösen?
+- Sind Arbeitsanweisungen in maximal 1-2 einfachen Sätzen erklärbar?
+- Förderschule: Aufgaben müssen konkret, handlungsorientiert und mit maximal einem Schritt erklärbar sein
+- Grundschule Klasse 1-2: keine abstrakten Konzepte, nur konkretes Handeln mit Material
+
+BEKANNTE HERAUSFORDERUNGEN:
+- Schüler mit bekannten Schwierigkeiten sind im Kontext angegeben
+- Plant die Stunde explizit wie diese Schüler eingebunden werden ohne den Rest der Klasse zu bremsen?
+- Gibt es einen konkreten Plan B wenn ein Schüler komplett aussteigt oder die Klasse nicht mitkommt?
+
+TRANSITIONS:
+- Sind alle Übergänge zwischen Phasen explizit geplant und zeitlich einkalkuliert?
+- Gibt es klare Signale für Phasenwechsel (Glocke, Klatschen, Licht etc.)?
+- Ist benötigtes Material bereits vor der Stunde vorbereitet?
+- Wie viele Phasenwechsel gibt es? Mehr als 4 ist für Förderschule und Grundschule zu viel.
+
+ABSCHLIESSENDE SELBSTPRÜFUNG:
+Beantworte intern vor der Ausgabe:
+1. Passt die Zeitplanung realistisch inkl. aller Transitions?
+2. Können ALLE Schüler (auch die schwächsten) irgendetwas Sinnvolles tun?
+3. Ist die Stunde auch dann durchführbar wenn 20% mehr Zeit vergeht als geplant?
+
+Wenn eine dieser Fragen mit NEIN beantwortet wird: Überarbeite die Stunde entsprechend.`;
 
 interface GenerateRequest {
   className?: string;
