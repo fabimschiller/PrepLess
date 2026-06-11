@@ -649,32 +649,16 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
             {saving ? 'Speichert…' : '💾 Stunde speichern'}
           </button>
         )}
-         {hasContent && !isStreaming && (
-           <button
-             className="btn-secondary"
-             type="button"
-             onClick={handlePrint}
-           >
-             🖨 Drucken
-           </button>
-         )}
-         {savedLessonId && !isStreaming && (
-           <button
-             className="btn-delete-text"
-             type="button"
-             onClick={handleDelete}
-           >
-             Löschen
-           </button>
-         )}
          {savedLessonId && !isStreaming && (
            <button
              className="btn-primary"
              type="button"
              onClick={() => {
+               console.log('Material button clicked, materials:', materials, 'showMaterialsModal:', showMaterialsModal)
                if (!materials) {
                  suggestMaterials()
                } else {
+                 console.log('Setting showMaterialsModal to true')
                  setShowMaterialsModal(true)
                }
              }}
@@ -683,6 +667,25 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
              {materialsLoading ? 'Materialien werden vorgeschlagen…' : '📚 Material'}
            </button>
          )}
+        <div className="workspace-actions-spacer" />
+        {hasContent && !isStreaming && (
+          <button
+            className="btn-secondary"
+            type="button"
+            onClick={handlePrint}
+          >
+            🖨 Drucken
+          </button>
+        )}
+        {savedLessonId && !isStreaming && (
+          <button
+            className="btn-delete-text"
+            type="button"
+            onClick={handleDelete}
+          >
+            Löschen
+          </button>
+        )}
        </div>
 
       {genError && <div className="alert error">{genError}</div>}
@@ -745,6 +748,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
        )}
 
       {/* Material-Modal Overlay */}
+      {console.log('Modal render check, showMaterialsModal:', showMaterialsModal, 'materials:', materials)}
       {showMaterialsModal && materials && (
         <div className="materials-modal-overlay" onClick={() => setShowMaterialsModal(false)}>
           <div className="materials-modal" onClick={(e) => e.stopPropagation()}>

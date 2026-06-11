@@ -21,6 +21,10 @@
   flex-wrap: wrap;
 }
 
+.workspace-actions-spacer {
+  flex: 1;
+}
+
 .workspace-content-wrap {
   border: 1px solid var(--border);
   border-radius: 10px;
