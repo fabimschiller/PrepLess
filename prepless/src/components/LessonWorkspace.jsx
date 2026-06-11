@@ -1006,27 +1006,21 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
 
       {genError && <div className="alert error">{genError}</div>}
 
-      {(isStreaming || hasContent) && (
-        <div className="workspace-content-wrap">
-          {isStreaming && !hasContent && (
-            <div className="loading-indicator">
-              <span className="spinner" />
-              <span>Stunde wird generiert…</span>
-            </div>
-          )}
-           {hasContent && (
-             <>
-               {isStreaming || Object.keys(partialLesson).length > 0 ? (
-                 <LessonRenderer lessonJson={partialLesson} isStreaming={isStreaming} />
-               ) : (
-                 <pre className="workspace-content">
-                   {content}
-                 </pre>
-               )}
-             </>
-           )}
-        </div>
-      )}
+       {(isStreaming || hasContent) && (
+         <div className="workspace-content-wrap">
+            {hasContent && (
+              <>
+                {isStreaming || Object.keys(partialLesson).length > 0 ? (
+                  <LessonRenderer lessonJson={partialLesson} isStreaming={isStreaming} />
+                ) : (
+                  <pre className="workspace-content">
+                    {content}
+                  </pre>
+                )}
+              </>
+            )}
+         </div>
+       )}
 
        {hasContent && !isStreaming && (
          <div className="workspace-save-row">
@@ -1084,18 +1078,13 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
             </div>
 
             <div className="materials-modal-content">
-              {materialsLoading ? (
-                <div className="materials-loading">
-                  <div className="spinner"></div>
-                  <p>Materialien werden vorgeschlagen…</p>
-                </div>
-              ) : !materials ? (
-                <div className="materials-error">
-                  <p>Keine Materialien geladen.</p>
-                </div>
-              ) : (
-                <>
-                  <h3 className="materials-title">📚 Lernmaterialien zur Stunde</h3>
+               {!materials ? (
+                 <div className="materials-error">
+                   <p>Keine Materialien geladen.</p>
+                 </div>
+               ) : (
+                 <>
+                   <h3 className="materials-title">📚 Lernmaterialien zur Stunde</h3>
 
                   {materials.videos && materials.videos.length > 0 && (
             <div className="material-category">
@@ -1208,18 +1197,13 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
             </div>
 
             <div className="learning-modal-content">
-              {learningLoading ? (
-                <div className="learning-loading">
-                  <div className="spinner"></div>
-                  <p>Ressourcen werden vorgeschlagen…</p>
-                </div>
-              ) : !learningResources || learningResources.length === 0 ? (
-                <div className="learning-error">
-                  <p>Keine Ressourcen geladen.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="learning-resources-list">
+               {!learningResources || learningResources.length === 0 ? (
+                 <div className="learning-error">
+                   <p>Keine Ressourcen geladen.</p>
+                 </div>
+               ) : (
+                 <>
+                   <div className="learning-resources-list">
                     {learningResources.map((resource, idx) => (
                       <div
                         key={`resource-${idx}`}
