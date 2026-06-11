@@ -724,7 +724,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
              }}
              disabled={learningLoading}
            >
-             {learningLoading ? 'Ressourcen werden vorgeschlagen…' : '🎓 Fortbildung'}
+             {learningLoading ? 'Ressourcen werden vorgeschlagen…' : '🎓 Dahinter steckt…'}
            </button>
          )}
          <div className="workspace-actions-spacer" />
