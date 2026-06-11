@@ -11,6 +11,84 @@ import { supabase } from '../lib/supabase'
 import LessonRenderer from './LessonRenderer'
 import './LessonWorkspace.css'
 
+// ─── Partial JSON Extraction ──────────────────────────────────────────────────
+function extractPartialLesson(jsonString) {
+  const partial = {}
+
+  // titel: extrahiere String zwischen "titel": "..." 
+  const titelMatch = jsonString.match(/"titel"\s*:\s*"([^"]+)"/)
+  if (titelMatch) {
+    partial.titel = titelMatch[1]
+  }
+
+  // lernziele: extrahiere Array
+  const lernzieleMatch = jsonString.match(/"lernziele"\s*:\s*\[([\s\S]*?)\]/)
+  if (lernzieleMatch) {
+    try {
+      const arrayStr = `[${lernzieleMatch[1]}]`
+      partial.lernziele = JSON.parse(arrayStr)
+    } catch (e) {
+      // Noch nicht vollständig
+    }
+  }
+
+  // phasen: extrahiere Array mit vollständigen Objekten
+  const phasenMatch = jsonString.match(/"phasen"\s*:\s*\[([\s\S]*)\](?:\s*,\s*"|\s*\})/)
+  if (phasenMatch) {
+    try {
+      // Finde alle vollständigen Objekte { ... }
+      const phasenStr = phasenMatch[1]
+      const phasen = []
+      let depth = 0
+      let current = ''
+      
+      for (let i = 0; i < phasenStr.length; i++) {
+        const char = phasenStr[i]
+        if (char === '{') depth++
+        if (char === '}') depth--
+        current += char
+        
+        if (depth === 0 && current.trim().endsWith('}')) {
+          try {
+            // Cleanup: entferne führendes Komma
+            const cleaned = current.trim().replace(/^,\s*/, '')
+            const phase = JSON.parse(cleaned)
+            phasen.push(phase)
+            current = ''
+          } catch (e) {
+            // Skip malformed
+          }
+        }
+      }
+      
+      if (phasen.length > 0) {
+        partial.phasen = phasen
+      }
+    } catch (e) {
+      // Noch nicht vollständig
+    }
+  }
+
+  // differenzierung: extrahiere Objekt
+  const diffMatch = jsonString.match(/"differenzierung"\s*:\s*\{([\s\S]*?)\}(?:\s*,\s*"wissenschaft"|\s*\})/)
+  if (diffMatch) {
+    try {
+      const diffStr = `{${diffMatch[1]}}`
+      partial.differenzierung = JSON.parse(diffStr)
+    } catch (e) {
+      // Noch nicht vollständig
+    }
+  }
+
+  // wissenschaft: extrahiere String
+  const wissMatch = jsonString.match(/"wissenschaft"\s*:\s*"([\s\S]*?)"(?:\s*\}|$)/)
+  if (wissMatch) {
+    partial.wissenschaft = wissMatch[1]
+  }
+
+  return partial
+}
+
 // ─── SSE-Parser ───────────────────────────────────────────────────────────────
 async function streamSSE(response, onChunk, signal) {
   const reader = response.body.getReader()
@@ -63,6 +141,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   const [topic, setTopic] = useState('')
   const [content, setContent] = useState('')
   const [parsedLesson, setParsedLesson] = useState(null)
+  const [partialLesson, setPartialLesson] = useState({})
   const [savedLessonId, setSavedLessonId] = useState(null)
   const [lessonStatus, setLessonStatus] = useState(null)
   const [generating, setGenerating] = useState(false)
@@ -370,6 +449,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   async function handleGenerate() {
     if (!topic.trim()) { setGenError('Bitte ein Thema eingeben.'); return }
     setGenerating(true); setGenError(null); setContent('')
+    setPartialLesson({}); setParsedLesson(null)
     setSavedLessonId(null); setSaveSuccess(null); setSaveError(null)
 
     try {
@@ -377,35 +457,56 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       let acc = ''
       await streamSSE(response, (chunk) => {
         acc += chunk
+        setContent(acc)
         
-        // Prüfe ob wir bereits einen Titel extrahiert haben
-        if (acc.includes('TITEL:') && !acc.includes('\n\n')) {
-          // Noch nicht vollständig extrahiert, warte weiter
-          setContent(acc)
-        } else if (acc.startsWith('TITEL:')) {
-          // Titel-Zeile vorhanden, extrahiere sie
-          const firstDoubleNewline = acc.indexOf('\n\n')
-          if (firstDoubleNewline !== -1) {
-            const titleLine = acc.substring(0, firstDoubleNewline)
-            const contentAfterTitle = acc.substring(firstDoubleNewline + 2)
-            
-            // Extrahiere den Titel (Text nach "TITEL: ")
-            const titleMatch = titleLine.match(/^TITEL:\s*(.+)$/)
-            if (titleMatch && titleMatch[1]) {
-              setTopic(titleMatch[1].trim())
-            }
-            
-            // Zeige nur den Content nach der Titel-Zeile
-            setContent(contentAfterTitle)
-          } else {
-            // Noch nicht vollständig, zeige alles
-            setContent(acc)
-          }
-        } else {
-          // Kein Titel, zeige wie vorher
-          setContent(acc)
-        }
+        // Progressive JSON-Extraktion: extrahiere Felder während Streaming
+        const partial = extractPartialLesson(acc)
+        setPartialLesson(partial)
       }, signal)
+
+      // Nach Ende des Streams: vollständiges JSON parsen
+      try {
+        const parsed = JSON.parse(acc)
+        if (parsed && typeof parsed === 'object' && parsed.titel) {
+          setParsedLesson(parsed)
+          setPartialLesson(parsed)
+          return
+        }
+      } catch (e) {
+        console.log('Full JSON parse failed')
+      }
+
+      // Fallback: Markdown-Extraktion
+      try {
+        const match = acc.match(/```(?:json)?\s*([\s\S]*?)```/)
+        if (match) {
+          const parsed = JSON.parse(match[1].trim())
+          if (parsed && typeof parsed === 'object' && parsed.titel) {
+            setParsedLesson(parsed)
+            setPartialLesson(parsed)
+            return
+          }
+        }
+      } catch (e) {
+        console.log('Markdown parse failed')
+      }
+
+      // Fallback: Objekt-Extraktion
+      try {
+        const firstBrace = acc.indexOf('{')
+        const lastBrace = acc.lastIndexOf('}')
+        if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
+          const jsonStr = acc.substring(firstBrace, lastBrace + 1)
+          const parsed = JSON.parse(jsonStr)
+          if (parsed && typeof parsed === 'object' && parsed.titel) {
+            setParsedLesson(parsed)
+            setPartialLesson(parsed)
+            return
+          }
+        }
+      } catch (e) {
+        console.log('Object extract failed')
+      }
     } catch (err) {
       if (err.name !== 'AbortError') setGenError(err.message ?? String(err))
     } finally {
@@ -417,51 +518,75 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     const req = refinement.trim()
     if (!req || !content) return
     setRefining(true); setGenError(null)
-    const prevContent = content
+    const prevParsedLesson = parsedLesson
     setContent('')
+    setPartialLesson({})
 
     try {
+      // previousContent muss als JSON-String übergeben werden
+      const previousContent = parsedLesson ? JSON.stringify(parsedLesson) : content
       const { response, signal } = await callGenerateStream({
-        previousContent: prevContent,
+        previousContent,
         refinementRequest: req,
       })
       let acc = ''
       await streamSSE(response, (chunk) => {
         acc += chunk
+        setContent(acc)
         
-        // Prüfe ob wir bereits einen Titel extrahiert haben
-        if (acc.includes('TITEL:') && !acc.includes('\n\n')) {
-          // Noch nicht vollständig extrahiert, warte weiter
-          setContent(acc)
-        } else if (acc.startsWith('TITEL:')) {
-          // Titel-Zeile vorhanden, extrahiere sie
-          const firstDoubleNewline = acc.indexOf('\n\n')
-          if (firstDoubleNewline !== -1) {
-            const titleLine = acc.substring(0, firstDoubleNewline)
-            const contentAfterTitle = acc.substring(firstDoubleNewline + 2)
-            
-            // Extrahiere den Titel (Text nach "TITEL: ")
-            const titleMatch = titleLine.match(/^TITEL:\s*(.+)$/)
-            if (titleMatch && titleMatch[1]) {
-              setTopic(titleMatch[1].trim())
-            }
-            
-            // Zeige nur den Content nach der Titel-Zeile
-            setContent(contentAfterTitle)
-          } else {
-            // Noch nicht vollständig, zeige alles
-            setContent(acc)
-          }
-        } else {
-          // Kein Titel, zeige wie vorher
-          setContent(acc)
-        }
+        // Progressive JSON-Extraktion während Refinement
+        const partial = extractPartialLesson(acc)
+        setPartialLesson(partial)
       }, signal)
       setRefinement('')
+
+      // Nach Ende des Streams: vollständiges JSON parsen
+      try {
+        const parsed = JSON.parse(acc)
+        if (parsed && typeof parsed === 'object' && parsed.titel) {
+          setParsedLesson(parsed)
+          setPartialLesson(parsed)
+          return
+        }
+      } catch (e) {
+        console.log('Full JSON parse failed')
+      }
+
+      // Fallback: Markdown-Extraktion
+      try {
+        const match = acc.match(/```(?:json)?\s*([\s\S]*?)```/)
+        if (match) {
+          const parsed = JSON.parse(match[1].trim())
+          if (parsed && typeof parsed === 'object' && parsed.titel) {
+            setParsedLesson(parsed)
+            setPartialLesson(parsed)
+            return
+          }
+        }
+      } catch (e) {
+        console.log('Markdown parse failed')
+      }
+
+      // Fallback: Objekt-Extraktion
+      try {
+        const firstBrace = acc.indexOf('{')
+        const lastBrace = acc.lastIndexOf('}')
+        if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
+          const jsonStr = acc.substring(firstBrace, lastBrace + 1)
+          const parsed = JSON.parse(jsonStr)
+          if (parsed && typeof parsed === 'object' && parsed.titel) {
+            setParsedLesson(parsed)
+            setPartialLesson(parsed)
+            return
+          }
+        }
+      } catch (e) {
+        console.log('Object extract failed')
+      }
     } catch (err) {
       if (err.name !== 'AbortError') {
         setGenError(err.message ?? String(err))
-        setContent(prevContent)
+        setParsedLesson(prevParsedLesson)
       }
     } finally {
       setRefining(false)
@@ -891,12 +1016,11 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
           )}
            {hasContent && (
              <>
-               {parsedLesson ? (
-                 <LessonRenderer lessonJson={parsedLesson} />
+               {isStreaming || Object.keys(partialLesson).length > 0 ? (
+                 <LessonRenderer lessonJson={partialLesson} />
                ) : (
                  <pre className="workspace-content">
                    {content}
-                   {isStreaming && <span className="caret">▍</span>}
                  </pre>
                )}
              </>

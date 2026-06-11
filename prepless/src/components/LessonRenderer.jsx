@@ -2,7 +2,7 @@ import './LessonRenderer.css'
 
 export default function LessonRenderer({ lessonJson }) {
   if (!lessonJson || typeof lessonJson !== 'object') {
-    return <div className="lesson-renderer-error">Ungültige Stundendaten</div>
+    return <div className="lesson-renderer-loading">Stunde wird geladen…</div>
   }
 
   const {
@@ -10,15 +10,22 @@ export default function LessonRenderer({ lessonJson }) {
     fach,
     jahrgang,
     schultyp,
-    dauer_minuten,
+    dauer_minuten = 45,
     lernziele = [],
     phasen = [],
     differenzierung = {},
     wissenschaft,
   } = lessonJson
 
+  // Progressive Rendering: nur anzeigen was bereits vorhanden ist
+  const isEmpty = !titel && lernziele.length === 0 && phasen.length === 0
+
   return (
-    <div className="lesson-renderer">
+    <div className="lesson-renderer">{isEmpty ? (
+        <div className="lesson-renderer-loading">Stunde wird geladen…</div>
+      ) : (
+        <>
+
       {/* HEADER */}
       <div className="lesson-header">
         <h1 className="lesson-title">{titel}</h1>
@@ -124,6 +131,8 @@ export default function LessonRenderer({ lessonJson }) {
           <h2>🔬 Wissenschaftliche Begründung</h2>
           <p>{wissenschaft}</p>
         </div>
+      )}
+        </>
       )}
     </div>
   )
