@@ -21,71 +21,34 @@ export default function StundenView() {
   const [marking, setMarking] = useState(false)
 
   useEffect(() => {
-    loadLesson()
-  }, [lessonId])
-
-  async function loadLesson() {
-    console.log('lessonId:', lessonId)
-    
-    if (!lessonId) {
-      console.log('[StundenView] Keine Stunden-ID vorhanden')
-      setError('Keine Stunden-ID vorhanden')
-      setLoading(false)
-      return
-    }
-
-    console.log('[StundenView] Lade Lektion mit ID:', lessonId)
-
-    try {
-      console.log('[StundenView] Rufe supabase.from(lessons).select auf...')
+    async function load() {
+      console.log('1. lessonId:', lessonId)
       
-      const { data, error: fetchError } = await supabase
+      const { data, error } = await supabase
         .from('lessons')
-        .select('id, title, content, status')
+        .select('*')
         .eq('id', lessonId)
         .maybeSingle()
-
-      console.log('[StundenView] Supabase-Antwort:', { data, fetchError })
-
-      if (fetchError) throw fetchError
       
-      if (!data) {
-        console.log('[StundenView] Keine Lektion gefunden')
-        setError('not_found')
-        setLoading(false)
-        return
-      }
-
-      setLesson(data)
-
-      // Debug: zeige ersten 200 Zeichen des content
-      console.log('lesson.content.substring(0, 200):', data.content.substring(0, 200))
-
-      // Content als JSON parsen — mit robustem Fallback
+      console.log('2. data:', data)
+      console.log('3. error:', error)
+      
+      if (error) { setError(error.message); setLoading(false); return }
+      if (!data) { setError('not_found'); setLoading(false); return }
+      
       try {
         const parsed = JSON.parse(data.content)
+        console.log('4. parsed OK:', parsed.titel)
+        setLesson(parsed)
         setParsedContent(parsed)
-      } catch (parseError) {
-        console.log('JSON parse failed:', parseError)
-        
-        // Fallback für ältere Stunden (Plaintext statt JSON)
-        console.log('Content ist wahrscheinlich Plaintext (ältere Version)')
-        throw new Error('legacy')
-      }
-    } catch (err) {
-      console.error('Error loading lesson:', err)
-      
-      if (err instanceof Error && err.message === 'legacy') {
+      } catch(e) {
+        console.log('4. parse error:', e.message)
         setError('legacy')
-      } else {
-        const errorMessage = err?.message || JSON.stringify(err)
-        console.error('[StundenView] Error Details:', errorMessage)
-        setError(errorMessage)
       }
-    } finally {
       setLoading(false)
     }
-  }
+    if (lessonId) load()
+  }, [lessonId])
 
   async function handleMarkConducted() {
     if (!lessonId) return
