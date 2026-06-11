@@ -151,6 +151,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: stretch;
 }
 
 /* Wrapper: relativ, damit das Badge absolut positioniert werden kann */
@@ -213,6 +214,7 @@
 
 .slot {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 6px;
@@ -228,6 +230,7 @@
     box-shadow 0.15s ease;
   min-width: 120px;
   max-width: 200px;
+  min-height: 60px;
   background: var(--surface);
 }
 
@@ -296,14 +299,16 @@
 
 .slot-label {
   display: block;
-  font-size: 10px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 12px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  word-break: break-word;
   max-width: 100%;
   margin-top: 2px;
-  line-height: 1.2;
+  line-height: 1.3;
   color: var(--text-h);
+  text-align: center;
 }
 
 .slot-placeholder {
