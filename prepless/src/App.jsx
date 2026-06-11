@@ -11,7 +11,7 @@ import { ClassesProvider } from './context/ClassesContext'
 import AppLayout from './components/AppLayout'
 import Unterricht from './pages/Unterricht'
 import Verwaltung from './pages/Verwaltung'
-import Karriere from './pages/Karriere'
+import MeinLernen from './pages/MeinLernen'
 import Login from './pages/Login'
 
 export default function App() {
@@ -63,7 +63,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/unterricht" replace />} />
           <Route path="/unterricht" element={<Unterricht />} />
           <Route path="/verwaltung" element={<Verwaltung />} />
-          <Route path="/karriere" element={<Karriere />} />
+          <Route path="/mein-lernen" element={<MeinLernen />} />
           <Route path="*" element={<Navigate to="/unterricht" replace />} />
         </Route>
       </Routes>

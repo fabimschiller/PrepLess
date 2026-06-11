@@ -7,7 +7,7 @@ import './AppLayout.css'
 const NAV_ITEMS = [
   { to: '/unterricht', label: 'Unterricht' },
   { to: '/verwaltung', label: 'Verwaltung' },
-  { to: '/karriere', label: 'Karriere' },
+  { to: '/mein-lernen', label: 'Mein Lernen' },
 ]
 
 // Stabile Farben für den Klassen-Punkt, rotierend über Index
