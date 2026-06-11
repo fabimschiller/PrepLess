@@ -42,29 +42,45 @@ function jsonError(status: number, message: string): Response {
 }
 
 function extractJSON(text: string): MaterialsResponse | null {
-  // Versuche zuerst JSON direkt zu parsen
+  // Versuch 1: Direktes JSON.parse
   try {
+    console.log('Versuch 1: Direktes JSON.parse');
     return JSON.parse(text);
-  } catch {
-    // Fallback: Suche nach JSON-Block in Markdown-Code-Blöcken
+  } catch (e) {
+    console.log('Versuch 1 fehlgeschlagen:', e instanceof Error ? e.message : String(e));
+  }
+
+  // Versuch 2: Markdown-Codeblock-Extraktion (```json ... ``` oder ``` ... ```)
+  try {
+    console.log('Versuch 2: Markdown-Codeblock-Extraktion');
     const markdownMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (markdownMatch) {
-      try {
-        return JSON.parse(markdownMatch[1]);
-      } catch {
-        // Fallback: Suche nach { ... } mit beliebigem Whitespace
-        const jsonMatch = text.match(/(\{[\s\S]*\})/);
-        if (jsonMatch) {
-          try {
-            return JSON.parse(jsonMatch[1]);
-          } catch {
-            return null;
-          }
-        }
-      }
+      const extracted = markdownMatch[1].trim();
+      console.log('Markdown-Block gefunden, parsen:', extracted.substring(0, 100));
+      return JSON.parse(extracted);
     }
-    return null;
+    console.log('Kein Markdown-Block gefunden');
+  } catch (e) {
+    console.log('Versuch 2 fehlgeschlagen:', e instanceof Error ? e.message : String(e));
   }
+
+  // Versuch 3: Substring von erstem { bis letztem }
+  try {
+    console.log('Versuch 3: Substring von { bis }');
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    
+    if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
+      const jsonString = text.substring(firstBrace, lastBrace + 1);
+      console.log('Substring extrahiert, Länge:', jsonString.length);
+      return JSON.parse(jsonString);
+    }
+    console.log('Keine Braces gefunden');
+  } catch (e) {
+    console.log('Versuch 3 fehlgeschlagen:', e instanceof Error ? e.message : String(e));
+  }
+
+  return null;
 }
 
 Deno.serve(async (req: Request) => {
@@ -113,7 +129,11 @@ Strukturiere die Antwort als JSON-Objekt mit diesen Kategorien:
   "uebungsmaterial": [{ "beschreibung": "...", "suchbegriff": "...", "quelle": "4teachers / lehrermarktplatz / etc." }]
 }
 
-Pro Kategorie 2-4 Vorschläge. Antworte NUR mit dem JSON-Objekt.`;
+Pro Kategorie 2-4 Vorschläge.
+
+KRITISCH: Antworte AUSSCHLIESSLICH mit dem JSON-Objekt. 
+Kein Markdown, keine Codeblöcke, keine Erklärung, keine zusätzliche Zwischentexte.
+Beginne mit { und ende mit }.`;
 
   try {
     const anthropicRes = await fetch(ANTHROPIC_API_URL, {
@@ -142,6 +162,8 @@ Pro Kategorie 2-4 Vorschläge. Antworte NUR mit dem JSON-Objekt.`;
 
     const anthropicData = await anthropicRes.json();
     const rawText = anthropicData.content?.[0]?.text?.trim() ?? "";
+
+    console.log('RAW MATERIAL RESPONSE:', JSON.stringify(rawText));
 
     // JSON extrahieren (robust mit Fallbacks)
     const materials = extractJSON(rawText);
