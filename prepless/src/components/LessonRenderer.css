@@ -1,0 +1,266 @@
+.lesson-renderer {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.lesson-renderer-error {
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* HEADER */
+.lesson-header {
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.lesson-title {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.lesson-meta {
+  margin: 0 0 16px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.lesson-lernziele {
+  margin-top: 16px;
+}
+
+.lesson-lernziele h3 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.lesson-lernziele ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style: none;
+}
+
+.lesson-lernziele li {
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+  position: relative;
+  padding-left: 12px;
+}
+
+.lesson-lernziele li:before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: bold;
+}
+
+/* PHASEN */
+.lesson-phasen h2 {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.phasen-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.phase-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.phase-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, var(--accent) 0%, rgba(29, 53, 87, 0.8) 100%);
+  color: white;
+}
+
+.phase-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.phase-title {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.phase-duration {
+  font-size: 12px;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.phase-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.phase-inhalt p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.phase-aktion {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.phase-aktion label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.phase-aktion p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 6px;
+}
+
+.phase-material {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.phase-material label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.material-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.material-chip {
+  display: inline-block;
+  padding: 4px 10px;
+  background: var(--border);
+  border-radius: 14px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.phase-transition {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+
+/* DIFFERENZIERUNG */
+.lesson-differenzierung h2 {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.diff-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.diff-column {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.diff-column h3 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.diff-column p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* WISSENSCHAFT */
+.lesson-wissenschaft h2 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.lesson-wissenschaft p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .lesson-renderer {
+    gap: 24px;
+  }
+
+  .lesson-title {
+    font-size: 22px;
+  }
+
+  .phase-header {
+    flex-wrap: wrap;
+  }
+
+  .diff-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .phase-content {
+    gap: 10px;
+  }
+}

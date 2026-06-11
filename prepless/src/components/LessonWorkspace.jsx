@@ -8,6 +8,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import LessonRenderer from './LessonRenderer'
 import './LessonWorkspace.css'
 
 // ─── SSE-Parser ───────────────────────────────────────────────────────────────
@@ -61,6 +62,7 @@ async function streamSSE(response, onChunk, signal) {
 export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   const [topic, setTopic] = useState('')
   const [content, setContent] = useState('')
+  const [parsedLesson, setParsedLesson] = useState(null)
   const [savedLessonId, setSavedLessonId] = useState(null)
   const [lessonStatus, setLessonStatus] = useState(null)
   const [generating, setGenerating] = useState(false)
@@ -138,9 +140,62 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       })
   }, [activeClass?.id])
 
+  // JSON-Parser: Versuche content als JSON zu parsen
+  useEffect(() => {
+    if (!content.trim()) {
+      setParsedLesson(null)
+      return
+    }
+
+    try {
+      // Versuch 1: Direktes JSON.parse
+      const parsed = JSON.parse(content)
+      if (parsed && typeof parsed === 'object' && parsed.titel) {
+        setParsedLesson(parsed)
+        return
+      }
+    } catch (e) {
+      console.log('JSON parse failed, trying markdown extraction')
+    }
+
+    // Versuch 2: Markdown-Codeblock-Extraktion
+    try {
+      const match = content.match(/```(?:json)?\s*([\s\S]*?)```/)
+      if (match) {
+        const parsed = JSON.parse(match[1].trim())
+        if (parsed && typeof parsed === 'object' && parsed.titel) {
+          setParsedLesson(parsed)
+          return
+        }
+      }
+    } catch (e) {
+      console.log('Markdown extraction failed')
+    }
+
+    // Versuch 3: Objekt-Extraktion von { bis }
+    try {
+      const firstBrace = content.indexOf('{')
+      const lastBrace = content.lastIndexOf('}')
+      if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
+        const jsonStr = content.substring(firstBrace, lastBrace + 1)
+        const parsed = JSON.parse(jsonStr)
+        if (parsed && typeof parsed === 'object' && parsed.titel) {
+          setParsedLesson(parsed)
+          return
+        }
+      }
+    } catch (e) {
+      console.log('Object extraction failed')
+    }
+
+    // Kein gültiges JSON gefunden → Fallback auf Plaintext
+    setParsedLesson(null)
+  }, [content])
+
   // Klassenwechsel: Content sofort löschen damit kein alter Inhalt sichtbar bleibt
   useEffect(() => {
     setContent('')
+    setParsedLesson(null)
     setSavedLessonId(null)
     setLessonStatus(null)
     setTopic('')
@@ -834,12 +889,18 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
               <span>Stunde wird generiert…</span>
             </div>
           )}
-          {hasContent && (
-            <pre className="workspace-content">
-              {content}
-              {isStreaming && <span className="caret">▍</span>}
-            </pre>
-          )}
+           {hasContent && (
+             <>
+               {parsedLesson ? (
+                 <LessonRenderer lessonJson={parsedLesson} />
+               ) : (
+                 <pre className="workspace-content">
+                   {content}
+                   {isStreaming && <span className="caret">▍</span>}
+                 </pre>
+               )}
+             </>
+           )}
         </div>
       )}
 
