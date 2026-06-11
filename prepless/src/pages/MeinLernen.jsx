@@ -292,9 +292,46 @@ export default function MeinLernen() {
       )}
 
       {progress.length === 0 && (
-        <div className="empty-state">
-          <p>Noch keine Fortbildungsressourcen angesehen.</p>
-          <p>Erstelle eine Unterrichtsstunde und klick auf "🎓 Dahinter steckt…" um Ressourcen zu erkunden!</p>
+        <div className="onboarding-container">
+          <div className="onboarding-box">
+            <div className="onboarding-icon">🎓</div>
+            <h2>Dein Lernweg beginnt hier</h2>
+            <div className="onboarding-content">
+              <p className="onboarding-intro">
+                Verdiene XP indem du die Lernressourcen nutzt die PrepLess dir zu deinen Unterrichtsstunden vorschlägt.
+              </p>
+
+              <div className="onboarding-steps">
+                <h3>So geht's:</h3>
+                <ol>
+                  <li>Öffne eine gespeicherte Unterrichtsstunde</li>
+                  <li>Klicke auf "🎓 Dahinter steckt…"</li>
+                  <li>Lies einen Artikel, schau ein Video oder höre einen Podcast</li>
+                  <li>Klicke auf "+ XP · Gesehen" um Punkte zu verdienen</li>
+                </ol>
+              </div>
+
+              <div className="onboarding-rewards">
+                <h3>XP-Verteilung:</h3>
+                <div className="reward-item">
+                  <span className="reward-icon">📖</span>
+                  <span className="reward-text">Artikel (~5 Min) = 10 XP</span>
+                </div>
+                <div className="reward-item">
+                  <span className="reward-icon">🎥</span>
+                  <span className="reward-text">Video (~10 Min) = 20 XP</span>
+                </div>
+                <div className="reward-item">
+                  <span className="reward-icon">🎧</span>
+                  <span className="reward-text">Podcast (~20 Min) = 40 XP</span>
+                </div>
+              </div>
+
+              <p className="onboarding-note">
+                Je mehr Zeit eine Ressource erfordert, desto mehr XP bekommst du!
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </section>
