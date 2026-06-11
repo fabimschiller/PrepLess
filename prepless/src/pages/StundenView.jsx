@@ -42,17 +42,28 @@ export default function StundenView() {
 
       setLesson(data)
 
-      // Content als JSON parsen
+      // Debug: zeige ersten 200 Zeichen des content
+      console.log('lesson.content.substring(0, 200):', data.content.substring(0, 200))
+
+      // Content als JSON parsen — mit robustem Fallback
       try {
         const parsed = JSON.parse(data.content)
         setParsedContent(parsed)
-      } catch (e) {
-        console.log('JSON parse failed:', e)
-        throw new Error('Stundenformat ungültig')
+      } catch (parseError) {
+        console.log('JSON parse failed:', parseError)
+        
+        // Fallback für ältere Stunden (Plaintext statt JSON)
+        console.log('Content ist wahrscheinlich Plaintext (ältere Version)')
+        throw new Error('legacy')
       }
     } catch (err) {
       console.error('Error loading lesson:', err)
-      setError(err instanceof Error ? err.message : 'Fehler beim Laden der Stunde')
+      
+      if (err instanceof Error && err.message === 'legacy') {
+        setError('legacy')
+      } else {
+        setError(err instanceof Error ? err.message : 'Fehler beim Laden der Stunde')
+      }
     } finally {
       setLoading(false)
     }
@@ -88,10 +99,42 @@ export default function StundenView() {
     )
   }
 
+  if (error === 'legacy') {
+    return (
+      <div className="stunden-view">
+        <div className="stunden-slide stunden-error-slide">
+          <div className="stunden-error-content">
+            <div className="stunden-error-icon">⚠️</div>
+            <h2>Diese Stunde ist zu alt</h2>
+            <p>Diese Stunde wurde mit einer älteren Version von PrepLess erstellt. Bitte generiere sie neu um die Smartphone-Ansicht zu nutzen.</p>
+            <button
+              className="stunden-btn stunden-btn-primary stunden-btn-large"
+              onClick={() => navigate('/')}
+            >
+              Zurück zur App
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (error) {
     return (
       <div className="stunden-view">
-        <div className="stunden-error">{error}</div>
+        <div className="stunden-slide stunden-error-slide">
+          <div className="stunden-error-content">
+            <div className="stunden-error-icon">❌</div>
+            <h2>Fehler beim Laden</h2>
+            <p>{error}</p>
+            <button
+              className="stunden-btn stunden-btn-primary stunden-btn-large"
+              onClick={() => navigate('/')}
+            >
+              Zurück zur App
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
@@ -99,7 +142,18 @@ export default function StundenView() {
   if (!lesson || !parsedContent) {
     return (
       <div className="stunden-view">
-        <div className="stunden-error">Stunde nicht gefunden</div>
+        <div className="stunden-slide stunden-error-slide">
+          <div className="stunden-error-content">
+            <div className="stunden-error-icon">❓</div>
+            <h2>Stunde nicht gefunden</h2>
+            <button
+              className="stunden-btn stunden-btn-primary stunden-btn-large"
+              onClick={() => navigate('/')}
+            >
+              Zurück zur App
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
