@@ -33,6 +33,13 @@ Die Stunde sollte folgende Struktur haben:
 5. ÜBUNG & TRANSFER (8 min)
 6. ABSCHLUSS & METAKOGNITION (2 min)
 
+KURZFASSUNG PRO PHASE: Jede Phase bekommt ein Feld "kurzfassung" – ein prägnanter Satz (MAX 15 WÖRTER) als Gedächtnisstütze für die Lehrkraft während des Unterrichts. 
+Beispiele:
+- Einstieg: "Schüler aktivieren Vorwissen durch Impulsfrage an der Tafel."
+- Erarbeitung: "Partnerarbeit mit Strukturhilfen; schnellere Schüler vertiefen eigenständig."
+- Sicherung: "Think-Pair-Share mit formativem Feedback; Lehrkraft zeigt Visualisierung."
+WICHTIG: Max. 15 Wörter, prägnant, konkret!
+
 DIFFERENZIERUNG: Gemeinsames Lernziel, individuelle Wege
 - Differenziere NICHT durch reduzierte Lernziele, sondern durch unterschiedliche Wege dorthin
 - Für schwächere Schüler: konkrete Stützen (Strukturhilfen, Visualisierungen, Scaffolding)
@@ -89,6 +96,7 @@ Beginne mit { und ende mit }.
       "nummer": 1,
       "titel": "Phasentitel",
       "dauer_minuten": 5,
+      "kurzfassung": "Prägnanter Satz max. 15 Wörter als Gedächtnisstütze",
       "inhalt": "Was in dieser Phase passiert",
       "lehreraktion": "Was die Lehrkraft konkret tut",
       "schueleraktion": "Was die Schüler konkret tun",

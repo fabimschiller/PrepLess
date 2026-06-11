@@ -7,6 +7,7 @@
  *   onLessonSaved – fn(lesson)
  */
 import { useEffect, useRef, useState } from 'react'
+import { QRCodeSVG as QRCode } from 'qrcode.react'
 import { supabase } from '../lib/supabase'
 import LessonRenderer from './LessonRenderer'
 import './LessonWorkspace.css'
@@ -163,23 +164,25 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   const [showLearningModal, setShowLearningModal] = useState(false)
   const [viewedResources, setViewedResources] = useState(new Set())
   const [viewingResourceId, setViewingResourceId] = useState(null)
+  const [showStartModal, setShowStartModal] = useState(false)
 
   const abortRef = useRef(null)
 
   // Modal-Close: Escape-Taste
   useEffect(() => {
-    if (!showMaterialsModal && !showLearningModal) return
+    if (!showMaterialsModal && !showLearningModal && !showStartModal) return
     
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         if (showMaterialsModal) setShowMaterialsModal(false)
         if (showLearningModal) setShowLearningModal(false)
+        if (showStartModal) setShowStartModal(false)
       }
     }
     
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [showMaterialsModal, showLearningModal])
+  }, [showMaterialsModal, showLearningModal, showStartModal])
 
   // Load viewed resources wenn Learning-Modal öffnet
   useEffect(() => {
@@ -943,17 +946,26 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
             Abbrechen
           </button>
         )}
-        {hasContent && !isStreaming && (
-          <button
-            className="btn-primary"
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? 'Speichert…' : '💾 Stunde speichern'}
-          </button>
-        )}
+         {hasContent && !isStreaming && (
+           <button
+             className="btn-primary"
+             type="button"
+             onClick={handleSave}
+             disabled={saving}
+           >
+             {saving ? 'Speichert…' : '💾 Stunde speichern'}
+           </button>
+         )}
          {savedLessonId && !isStreaming && (
+           <button
+             className="btn-primary"
+             type="button"
+             onClick={() => setShowStartModal(true)}
+           >
+             ▶ Stunde starten
+           </button>
+         )}
+          {savedLessonId && !isStreaming && (
            <button
              className="btn-primary"
              type="button"
@@ -1249,10 +1261,52 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
             </div>
           </div>
         </div>
-      )}
+       )}
 
-      {hasContent && (
-        <div className="workspace-refine">
+       {/* Start-Modal mit QR-Code */}
+       {showStartModal && (
+         <div className="start-modal-overlay" onClick={() => setShowStartModal(false)}>
+           <div className="start-modal" onClick={(e) => e.stopPropagation()}>
+             <div className="start-modal-header">
+               <h2>▶ Stunde starten</h2>
+               <button
+                 className="start-modal-close"
+                 type="button"
+                 onClick={() => setShowStartModal(false)}
+                 aria-label="Schließen"
+               >
+                 ✕
+               </button>
+             </div>
+
+             <div className="start-modal-content">
+               <p className="start-modal-text">Scanne den QR-Code mit deinem Smartphone</p>
+               
+               <div className="start-modal-qr-container">
+                 <QRCode 
+                   value={`${window.location.origin}/stunde/${savedLessonId}`}
+                   size={200}
+                   level="H"
+                   includeMargin={true}
+                 />
+               </div>
+
+               <p className="start-modal-url">
+                 <a 
+                   href={`${window.location.origin}/stunde/${savedLessonId}`}
+                   target="_blank"
+                   rel="noopener noreferrer"
+                 >
+                   {`${window.location.origin}/stunde/${savedLessonId}`}
+                 </a>
+               </p>
+             </div>
+           </div>
+         </div>
+       )}
+
+       {hasContent && (
+         <div className="workspace-refine">
           <div className="field">
             <label htmlFor="ws-refine">Verfeinern</label>
             <div className="refine-row">

@@ -12,6 +12,7 @@ import AppLayout from './components/AppLayout'
 import Unterricht from './pages/Unterricht'
 import Verwaltung from './pages/Verwaltung'
 import MeinLernen from './pages/MeinLernen'
+import StundenView from './pages/StundenView'
 import Login from './pages/Login'
 
 export default function App() {
@@ -59,13 +60,14 @@ export default function App() {
               </ClassesProvider>
             </RequireAuth>
           }
-        >
-          <Route path="/" element={<Navigate to="/unterricht" replace />} />
-          <Route path="/unterricht" element={<Unterricht />} />
-          <Route path="/verwaltung" element={<Verwaltung />} />
-          <Route path="/mein-lernen" element={<MeinLernen />} />
-          <Route path="*" element={<Navigate to="/unterricht" replace />} />
-        </Route>
+         >
+           <Route path="/" element={<Navigate to="/unterricht" replace />} />
+           <Route path="/unterricht" element={<Unterricht />} />
+           <Route path="/verwaltung" element={<Verwaltung />} />
+           <Route path="/mein-lernen" element={<MeinLernen />} />
+           <Route path="/stunde/:lessonId" element={<StundenView />} />
+           <Route path="*" element={<Navigate to="/unterricht" replace />} />
+         </Route>
       </Routes>
     </BrowserRouter>
   )
