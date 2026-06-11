@@ -748,8 +748,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
        )}
 
       {/* Material-Modal Overlay */}
-      {console.log('Modal render check, showMaterialsModal:', showMaterialsModal, 'materials:', materials)}
-      {showMaterialsModal && materials && (
+      {console.log('Modal render check, showMaterialsModal:', showMaterialsModal, 'materials:', materials, 'materialsLoading:', materialsLoading)}
+      {showMaterialsModal && (
         <div className="materials-modal-overlay" onClick={() => setShowMaterialsModal(false)}>
           <div className="materials-modal" onClick={(e) => e.stopPropagation()}>
             <div className="materials-modal-header">
@@ -765,9 +765,19 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
             </div>
 
             <div className="materials-modal-content">
-          <h3 className="materials-title">📚 Lernmaterialien zur Stunde</h3>
+              {materialsLoading ? (
+                <div className="materials-loading">
+                  <p>Materialien werden vorgeschlagen…</p>
+                </div>
+              ) : !materials ? (
+                <div className="materials-error">
+                  <p>Keine Materialien geladen.</p>
+                </div>
+              ) : (
+                <>
+                  <h3 className="materials-title">📚 Lernmaterialien zur Stunde</h3>
 
-          {materials.videos && materials.videos.length > 0 && (
+                  {materials.videos && materials.videos.length > 0 && (
             <div className="material-category">
               <h4 className="material-category-title">🎥 Videos</h4>
               <div className="material-list">
@@ -852,8 +862,10 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+             </div>
+           )}
+                </>
+              )}
             </div>
           </div>
         </div>

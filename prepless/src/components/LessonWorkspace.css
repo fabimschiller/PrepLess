@@ -391,3 +391,31 @@
   overflow-y: auto;
   flex: 1;
 }
+
+.materials-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.materials-loading p {
+  margin: 0;
+  text-align: center;
+}
+
+.materials-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.materials-error p {
+  margin: 0;
+  text-align: center;
+}
