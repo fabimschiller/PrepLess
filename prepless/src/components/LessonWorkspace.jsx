@@ -693,12 +693,13 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       .select()
       .single()
 
-    setSaving(false)
-    if (insErr) { setSaveError(insErr.message); return }
-    setSavedLessonId(lesson.id)
-    setLessonStatus(lesson.status ?? 'planned')
-    setSaveSuccess('Stunde gespeichert.')
-    onLessonSaved?.(lesson)
+     setSaving(false)
+     if (insErr) { setSaveError(insErr.message); return }
+     console.log('lesson.id from Supabase:', lesson.id, 'type:', typeof lesson.id)
+     setSavedLessonId(lesson.id)
+     setLessonStatus(lesson.status ?? 'planned')
+     setSaveSuccess('Stunde gespeichert.')
+     onLessonSaved?.(lesson)
   }
 
   async function handleDelete() {
@@ -1289,7 +1290,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
 
        {/* Start-Modal mit QR-Code */}
        {showStartModal && (() => {
-         const qrUrl = `${window.location.origin}/stunde/${savedLessonId}`
+         console.log('savedLessonId type:', typeof savedLessonId, savedLessonId)
+         const qrUrl = `https://prep-less-lyart.vercel.app/stunde/${savedLessonId}`
          console.log('[QR-Code Modal] QR URL:', qrUrl)
          return (
            <div className="start-modal-overlay" onClick={() => setShowStartModal(false)}>
