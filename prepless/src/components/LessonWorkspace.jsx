@@ -34,39 +34,55 @@ function extractPartialLesson(jsonString) {
   }
 
   // phasen: extrahiere Array mit vollständigen Objekten
-  const phasenMatch = jsonString.match(/"phasen"\s*:\s*\[([\s\S]*)\](?:\s*,\s*"|\s*\})/)
-  if (phasenMatch) {
-    try {
-      // Finde alle vollständigen Objekte { ... }
-      const phasenStr = phasenMatch[1]
-      const phasen = []
-      let depth = 0
-      let current = ''
-      
-      for (let i = 0; i < phasenStr.length; i++) {
-        const char = phasenStr[i]
-        if (char === '{') depth++
-        if (char === '}') depth--
-        current += char
+  // Finde den Anfang von "phasen": [
+  const phasenStart = jsonString.indexOf('"phasen"')
+  if (phasenStart !== -1) {
+    const afterPhasen = jsonString.indexOf('[', phasenStart)
+    if (afterPhasen !== -1) {
+      try {
+        // Finde alle vollständigen Objekte { ... }
+        const phasen = []
+        let depth = 0
+        let current = ''
+        let bracketDepth = 0
         
-        if (depth === 0 && current.trim().endsWith('}')) {
-          try {
-            // Cleanup: entferne führendes Komma
-            const cleaned = current.trim().replace(/^,\s*/, '')
-            const phase = JSON.parse(cleaned)
-            phasen.push(phase)
-            current = ''
-          } catch (e) {
-            // Skip malformed
+        for (let i = afterPhasen; i < jsonString.length; i++) {
+          const char = jsonString[i]
+          
+          // Verfolge die äußere Array-Klammer
+          if (char === '[') bracketDepth++
+          if (char === ']') {
+            bracketDepth--
+            if (bracketDepth === 0) break // Ende des phasen-Arrays
+          }
+          
+          // Verfolge die inneren Objekt-Klammern
+          if (char === '{') depth++
+          if (char === '}') depth--
+          
+          current += char
+          
+          if (depth === 0 && current.trim().endsWith('}')) {
+            try {
+              // Cleanup: entferne führendes Komma und [ 
+              const cleaned = current.trim().replace(/^[,\[\s]*/, '').trim()
+              if (cleaned.startsWith('{')) {
+                const phase = JSON.parse(cleaned)
+                phasen.push(phase)
+                current = ''
+              }
+            } catch (e) {
+              // Skip malformed
+            }
           }
         }
+        
+        if (phasen.length > 0) {
+          partial.phasen = phasen
+        }
+      } catch (e) {
+        // Noch nicht vollständig
       }
-      
-      if (phasen.length > 0) {
-        partial.phasen = phasen
-      }
-    } catch (e) {
-      // Noch nicht vollständig
     }
   }
 
@@ -883,11 +899,19 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     )
   }
 
-  const { unit, slotIndex } = slot
-  const isStreaming = generating || refining
-  const hasContent = content.length > 0
+   const { unit, slotIndex } = slot
+   const isStreaming = generating || refining
+   const hasContent = content.length > 0
 
-  console.log('[LessonWorkspace Render] savedLessonId:', savedLessonId, 'isStreaming:', isStreaming, 'hasContent:', hasContent)
+   console.log('[LessonWorkspace Render]', {
+     savedLessonId,
+     isStreaming,
+     hasContent,
+     hasPartialLesson: Object.keys(partialLesson).length > 0,
+     partialLessonKeys: Object.keys(partialLesson),
+     contentLength: content.length,
+     parsedLessonExists: !!parsedLesson,
+   })
 
   return (
     <section className="workspace card">
@@ -1022,8 +1046,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
          <div className="workspace-content-wrap">
             {hasContent && (
               <>
-                {isStreaming || Object.keys(partialLesson).length > 0 ? (
-                  <LessonRenderer lessonJson={partialLesson} isStreaming={isStreaming} />
+                {isStreaming || Object.keys(partialLesson).length > 0 || parsedLesson ? (
+                  <LessonRenderer lessonJson={parsedLesson || partialLesson} isStreaming={isStreaming} />
                 ) : (
                   <pre className="workspace-content">
                     {content}
