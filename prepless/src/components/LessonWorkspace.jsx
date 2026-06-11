@@ -1288,46 +1288,54 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
        )}
 
        {/* Start-Modal mit QR-Code */}
-       {showStartModal && (
-         <div className="start-modal-overlay" onClick={() => setShowStartModal(false)}>
-           <div className="start-modal" onClick={(e) => e.stopPropagation()}>
-             <div className="start-modal-header">
-               <h2>▶ Stunde starten</h2>
-               <button
-                 className="start-modal-close"
-                 type="button"
-                 onClick={() => setShowStartModal(false)}
-                 aria-label="Schließen"
-               >
-                 ✕
-               </button>
-             </div>
-
-             <div className="start-modal-content">
-               <p className="start-modal-text">Scanne den QR-Code mit deinem Smartphone</p>
-               
-               <div className="start-modal-qr-container">
-                 <QRCode 
-                   value={`${window.location.origin}/stunde/${savedLessonId}`}
-                   size={200}
-                   level="H"
-                   includeMargin={true}
-                 />
+       {showStartModal && (() => {
+         const qrUrl = `${window.location.origin}/stunde/${savedLessonId}`
+         console.log('[QR-Code Modal] QR URL:', qrUrl)
+         return (
+           <div className="start-modal-overlay" onClick={() => setShowStartModal(false)}>
+             <div className="start-modal" onClick={(e) => e.stopPropagation()}>
+               <div className="start-modal-header">
+                 <h2>▶ Stunde starten</h2>
+                 <button
+                   className="start-modal-close"
+                   type="button"
+                   onClick={() => setShowStartModal(false)}
+                   aria-label="Schließen"
+                 >
+                   ✕
+                 </button>
                </div>
 
-               <p className="start-modal-url">
-                 <a 
-                   href={`${window.location.origin}/stunde/${savedLessonId}`}
-                   target="_blank"
-                   rel="noopener noreferrer"
-                 >
-                   {`${window.location.origin}/stunde/${savedLessonId}`}
-                 </a>
-               </p>
+               <div className="start-modal-content">
+                 <p className="start-modal-text">Scanne den QR-Code mit deinem Smartphone</p>
+                 
+                 <div className="start-modal-qr-container">
+                   <QRCode 
+                     value={qrUrl}
+                     size={200}
+                     level="H"
+                     includeMargin={true}
+                   />
+                 </div>
+
+                 <p className="start-modal-url">
+                   <a 
+                     href={qrUrl}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                   >
+                     {qrUrl}
+                   </a>
+                 </p>
+
+                 <p style={{ fontSize: '11px', wordBreak: 'break-all', color: '#999', marginTop: '12px' }}>
+                   {qrUrl}
+                 </p>
+               </div>
              </div>
            </div>
-         </div>
-       )}
+         )
+       })()}
 
        {hasContent && (
          <div className="workspace-refine">
