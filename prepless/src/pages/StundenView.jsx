@@ -10,6 +10,7 @@ import './StundenView.css'
 
 export default function StundenView() {
   const { lessonId } = useParams()
+  console.log('RAW lessonId from useParams:', lessonId)
   const navigate = useNavigate()
   const [lesson, setLesson] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -179,13 +180,13 @@ export default function StundenView() {
     )
   }
 
-  if (!lesson || !parsedContent) {
+  if (!lesson) {
     return (
       <div className="stunden-view">
         <div className="stunden-slide stunden-error-slide">
           <div className="stunden-error-content">
             <div className="stunden-error-icon">❓</div>
-            <h2>Stunde nicht gefunden</h2>
+            <h2>Lektion nicht gefunden</h2>
             <button
               className="stunden-btn stunden-btn-primary stunden-btn-large"
               onClick={() => navigate('/')}
@@ -197,6 +198,33 @@ export default function StundenView() {
       </div>
     )
   }
+
+  if (!parsedContent) {
+    return (
+      <div className="stunden-view">
+        <div className="stunden-slide stunden-error-slide">
+          <div className="stunden-error-content">
+            <div className="stunden-error-icon">⚠️</div>
+            <h2>Stundeninhalt konnte nicht geladen werden</h2>
+            <button
+              className="stunden-btn stunden-btn-primary stunden-btn-large"
+              onClick={() => navigate('/')}
+            >
+              Zurück zur App
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  console.log('[StundenView Render]', {
+    loading,
+    error,
+    lessonExists: !!lesson,
+    parsedContentExists: !!parsedContent,
+    currentPhase,
+  })
 
   const phases = parsedContent.phasen || []
   const totalPhases = phases.length
