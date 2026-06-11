@@ -74,6 +74,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   const [students, setStudents] = useState([])
   const [topicSuggestions, setTopicSuggestions] = useState([])
   const [aiSuggestions, setAiSuggestions] = useState([])
+  const [materials, setMaterials] = useState(null)
+  const [materialsLoading, setMaterialsLoading] = useState(false)
 
   const abortRef = useRef(null)
 
@@ -508,6 +510,50 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     window.location.reload()
   }
 
+  async function suggestMaterials() {
+    if (!content.trim() || !activeClass) return
+    setMaterialsLoading(true)
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData?.session?.access_token
+      if (!accessToken) throw new Error('Nicht eingeloggt.')
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/suggest-materials`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          lessonContent: content,
+          lessonTitle: topic,
+          subject: activeClass.subject,
+          grade: activeClass.grade,
+          schoolType: activeClass.school_type,
+        }),
+      })
+
+      if (!response.ok) {
+        const errText = await response.text().catch(() => '')
+        throw new Error(
+          `Material-Vorschlag fehlgeschlagen (${response.status})${errText ? `: ${errText}` : ''}`
+        )
+      }
+
+      const result = await response.json()
+      setMaterials(result.materials)
+    } catch (err) {
+      console.error('suggestMaterials error:', err)
+      setGenError(err instanceof Error ? err.message : 'Fehler beim Laden der Materialvorschläge')
+    } finally {
+      setMaterialsLoading(false)
+    }
+  }
+
   // ─── Render ────────────────────────────────────────────────────────────────
 
   if (!slot) {
@@ -602,19 +648,25 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
              🖨 Drucken
            </button>
          )}
-         {console.log('[Delete Button] Condition check - savedLessonId:', savedLessonId, '!isStreaming:', !isStreaming) || (savedLessonId && !isStreaming && (
+         {savedLessonId && !isStreaming && (
            <button
              className="btn-delete-text"
              type="button"
-             onClick={() => { 
-               console.log('BUTTON CLICKED - savedLessonId:', savedLessonId)
-               alert('click!'); 
-               handleDelete(); 
-             }}
+             onClick={handleDelete}
            >
              Löschen
            </button>
-         ))}
+         )}
+         {savedLessonId && !isStreaming && (
+           <button
+             className="btn-secondary"
+             type="button"
+             onClick={suggestMaterials}
+             disabled={materialsLoading}
+           >
+             {materialsLoading ? 'Materialien werden vorgeschlagen…' : '📚 Materialien vorschlagen'}
+           </button>
+         )}
        </div>
 
       {genError && <div className="alert error">{genError}</div>}
@@ -663,6 +715,101 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
            )}
          </div>
        )}
+
+      {/* Material-Vorschläge */}
+      {materials && (
+        <div className="materials-section">
+          <h3 className="materials-title">📚 Lernmaterialien zur Stunde</h3>
+
+          {materials.videos && materials.videos.length > 0 && (
+            <div className="material-category">
+              <h4 className="material-category-title">🎥 Videos</h4>
+              <div className="material-list">
+                {materials.videos.map((item, idx) => (
+                  <div key={`video-${idx}`} className="material-item">
+                    <p className="material-description">{item.beschreibung}</p>
+                    <div className="material-search-code">{item.suchbegriff}</div>
+                    {item.plattform && <p className="material-source">{item.plattform}</p>}
+                    <button
+                      type="button"
+                      className="material-search-btn"
+                      onClick={() => window.open(`https://google.com/search?q=${encodeURIComponent(item.suchbegriff)}`, '_blank')}
+                    >
+                      🔍 Suchen
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {materials.artikel && materials.artikel.length > 0 && (
+            <div className="material-category">
+              <h4 className="material-category-title">📖 Artikel</h4>
+              <div className="material-list">
+                {materials.artikel.map((item, idx) => (
+                  <div key={`artikel-${idx}`} className="material-item">
+                    <p className="material-description">{item.beschreibung}</p>
+                    <div className="material-search-code">{item.suchbegriff}</div>
+                    {item.quelle && <p className="material-source">{item.quelle}</p>}
+                    <button
+                      type="button"
+                      className="material-search-btn"
+                      onClick={() => window.open(`https://google.com/search?q=${encodeURIComponent(item.suchbegriff)}`, '_blank')}
+                    >
+                      🔍 Suchen
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {materials.podcasts && materials.podcasts.length > 0 && (
+            <div className="material-category">
+              <h4 className="material-category-title">🎧 Podcasts</h4>
+              <div className="material-list">
+                {materials.podcasts.map((item, idx) => (
+                  <div key={`podcast-${idx}`} className="material-item">
+                    <p className="material-description">{item.beschreibung}</p>
+                    <div className="material-search-code">{item.suchbegriff}</div>
+                    {item.plattform && <p className="material-source">{item.plattform}</p>}
+                    <button
+                      type="button"
+                      className="material-search-btn"
+                      onClick={() => window.open(`https://google.com/search?q=${encodeURIComponent(item.suchbegriff)}`, '_blank')}
+                    >
+                      🔍 Suchen
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {materials.uebungsmaterial && materials.uebungsmaterial.length > 0 && (
+            <div className="material-category">
+              <h4 className="material-category-title">📋 Übungsmaterial</h4>
+              <div className="material-list">
+                {materials.uebungsmaterial.map((item, idx) => (
+                  <div key={`uebung-${idx}`} className="material-item">
+                    <p className="material-description">{item.beschreibung}</p>
+                    <div className="material-search-code">{item.suchbegriff}</div>
+                    {item.quelle && <p className="material-source">{item.quelle}</p>}
+                    <button
+                      type="button"
+                      className="material-search-btn"
+                      onClick={() => window.open(`https://google.com/search?q=${encodeURIComponent(item.suchbegriff)}`, '_blank')}
+                    >
+                      🔍 Suchen
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {hasContent && (
         <div className="workspace-refine">

@@ -235,3 +235,85 @@
 .suggestion-chip:active {
   transform: scale(0.96);
 }
+
+/* Material-Vorschläge */
+.materials-section {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  margin-top: 16px;
+}
+
+.materials-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 14px;
+  color: var(--text-h);
+}
+
+.material-category {
+  margin-bottom: 18px;
+}
+
+.material-category-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text-h);
+}
+
+.material-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.material-item {
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.material-description {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-h);
+  line-height: 1.5;
+}
+
+.material-search-code {
+  padding: 6px 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+  color: #666;
+  word-break: break-word;
+}
+
+.material-source {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.material-search-btn {
+  align-self: flex-start;
+  padding: 6px 12px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--accent);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.material-search-btn:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
