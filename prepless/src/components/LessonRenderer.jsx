@@ -1,6 +1,6 @@
 import './LessonRenderer.css'
 
-export default function LessonRenderer({ lessonJson }) {
+export default function LessonRenderer({ lessonJson, isStreaming = false }) {
   if (!lessonJson || typeof lessonJson !== 'object') {
     return <div className="lesson-renderer-loading">Stunde wird geladen…</div>
   }
@@ -130,6 +130,17 @@ export default function LessonRenderer({ lessonJson }) {
         <div className="lesson-wissenschaft">
           <h2>🔬 Wissenschaftliche Begründung</h2>
           <p>{wissenschaft}</p>
+        </div>
+      )}
+
+      {/* LOADING INDICATOR */}
+      {isStreaming && (
+        <div className="loading-indicator">
+          <div className="loading-pulse">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
         </div>
       )}
         </>

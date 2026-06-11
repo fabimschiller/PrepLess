@@ -1017,7 +1017,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
            {hasContent && (
              <>
                {isStreaming || Object.keys(partialLesson).length > 0 ? (
-                 <LessonRenderer lessonJson={partialLesson} />
+                 <LessonRenderer lessonJson={partialLesson} isStreaming={isStreaming} />
                ) : (
                  <pre className="workspace-content">
                    {content}
