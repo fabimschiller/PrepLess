@@ -135,12 +135,15 @@ export default function LessonRenderer({ lessonJson, isStreaming = false }) {
 
       {/* LOADING INDICATOR */}
       {isStreaming && (
-        <div className="loading-indicator">
-          <div className="loading-pulse">
+        <div className="lesson-loading">
+          <div className="loading-dots">
             <span></span>
             <span></span>
             <span></span>
           </div>
+          <p className="loading-text">
+            👨‍🏫 Gute Unterrichtsstunden brauchen etwas Zeit — auch für uns. Gleich ist es soweit. 👷
+          </p>
         </div>
       )}
         </>

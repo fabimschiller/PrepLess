@@ -245,39 +245,60 @@
 }
 
 /* LOADING INDICATOR */
-.loading-indicator {
+.lesson-loading {
   width: 100%;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
+  padding: 40px 20px;
   margin: 16px 0;
 }
 
-.loading-pulse {
-  width: 100%;
+.loading-dots {
   display: flex;
-  justify-content: center;
+  gap: 8px;
   align-items: center;
-  padding: 40px 0;
-  margin: 16px 0;
+  justify-content: center;
 }
 
-.loading-pulse span {
+.loading-dots span {
   display: inline-block;
   width: 14px;
   height: 14px;
-  margin: 0 6px;
   border-radius: 50%;
   background: var(--accent);
   animation: pulse 1.2s infinite;
 }
 
-.loading-pulse span:nth-child(2) {
+.loading-dots span:nth-child(2) {
   animation-delay: 0.2s;
 }
 
-.loading-pulse span:nth-child(3) {
+.loading-dots span:nth-child(3) {
   animation-delay: 0.4s;
+}
+
+.loading-text {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--text-muted);
+  margin-top: 16px;
+  text-align: center;
+  max-width: 400px;
+  line-height: 1.5;
+  animation: textFade 3s ease-in-out infinite;
+}
+
+@keyframes textFade {
+  0% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.3;
+  }
 }
 
 @keyframes pulse {
