@@ -24,6 +24,8 @@ export default function StundenView() {
   }, [lessonId])
 
   async function loadLesson() {
+    console.log('lessonId:', lessonId)
+    
     if (!lessonId) {
       console.log('[StundenView] Keine Stunden-ID vorhanden')
       setError('Keine Stunden-ID vorhanden')
@@ -38,14 +40,20 @@ export default function StundenView() {
       
       const { data, error: fetchError } = await supabase
         .from('lessons')
-        .select('*')
+        .select('id, title, content, status')
         .eq('id', lessonId)
-        .single()
+        .maybeSingle()
 
       console.log('[StundenView] Supabase-Antwort:', { data, fetchError })
 
       if (fetchError) throw fetchError
-      if (!data) throw new Error('Stunde nicht gefunden')
+      
+      if (!data) {
+        console.log('[StundenView] Keine Lektion gefunden')
+        setError('not_found')
+        setLoading(false)
+        return
+      }
 
       setLesson(data)
 
@@ -116,6 +124,26 @@ export default function StundenView() {
             <div className="stunden-error-icon">⚠️</div>
             <h2>Diese Stunde ist zu alt</h2>
             <p>Diese Stunde wurde mit einer älteren Version von PrepLess erstellt. Bitte generiere sie neu um die Smartphone-Ansicht zu nutzen.</p>
+            <button
+              className="stunden-btn stunden-btn-primary stunden-btn-large"
+              onClick={() => navigate('/')}
+            >
+              Zurück zur App
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error === 'not_found') {
+    return (
+      <div className="stunden-view">
+        <div className="stunden-slide stunden-error-slide">
+          <div className="stunden-error-content">
+            <div className="stunden-error-icon">❓</div>
+            <h2>Stunde nicht gefunden</h2>
+            <p>Diese Stunde existiert nicht oder wurde gelöscht.</p>
             <button
               className="stunden-btn stunden-btn-primary stunden-btn-large"
               onClick={() => navigate('/')}
