@@ -69,7 +69,9 @@ export default function StundenView() {
       if (err instanceof Error && err.message === 'legacy') {
         setError('legacy')
       } else {
-        setError(err instanceof Error ? err.message : 'Fehler beim Laden der Stunde')
+        const errorMessage = err?.message || JSON.stringify(err)
+        console.error('[StundenView] Error Details:', errorMessage)
+        setError(errorMessage)
       }
     } finally {
       setLoading(false)
@@ -134,6 +136,9 @@ export default function StundenView() {
             <div className="stunden-error-icon">❌</div>
             <h2>Fehler beim Laden</h2>
             <p>{error}</p>
+            <p style={{ fontSize: '12px', color: 'gray', marginTop: '12px', maxWidth: '300px', wordBreak: 'break-word' }}>
+              {error}
+            </p>
             <button
               className="stunden-btn stunden-btn-primary stunden-btn-large"
               onClick={() => navigate('/')}
