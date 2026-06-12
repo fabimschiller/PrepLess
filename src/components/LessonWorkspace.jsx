@@ -859,7 +859,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     )
   }
 
-   const { unit, slotIndex } = slot
+    const { unit, slotIndex } = slot
     const isStreaming = generating || refining
     const hasContent = content.length > 0
     const displayLesson = Object.keys(partialLesson).length > 0 
@@ -870,6 +870,9 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       hasParsedLesson: parsedLesson !== null,
       parsedLessonTitel: parsedLesson?.titel,
       hasPartialLesson: Object.keys(partialLesson).length > 0,
+      hasUnsavedRefinement: hasUnsavedRefinement,
+      savedLessonId: savedLessonId,
+      wasAutoSaved: wasAutoSaved,
     })
 
   return (
