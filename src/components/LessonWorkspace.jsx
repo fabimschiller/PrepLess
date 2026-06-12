@@ -44,6 +44,7 @@ export default function LessonWorkspace({ activeClass, activeSubject, slot, onLe
   const [viewedResources, setViewedResources] = useState(new Set())
   const [viewingResourceId, setViewingResourceId] = useState(null)
   const [showStartModal, setShowStartModal] = useState(false)
+  const [showPrintMenu, setShowPrintMenu] = useState(false)
 
   const {
     savedLessonId, lessonStatus,
@@ -69,6 +70,16 @@ export default function LessonWorkspace({ activeClass, activeSubject, slot, onLe
     suggestTopic,
     resetStream,
   } = useLessonStream({ activeClass, slot, topic, students, content, selectedSubject, setContent, handleAutoSave, setHasUnsavedRefinement, resetSave })
+
+  // Print-Menü: bei Klick außerhalb schließen
+  useEffect(() => {
+    if (!showPrintMenu) return
+    function handleOutside(e) {
+      if (!e.target.closest('.print-menu-wrap')) setShowPrintMenu(false)
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [showPrintMenu])
 
   // Modal-Close: Escape-Taste
   useEffect(() => {
@@ -143,6 +154,121 @@ export default function LessonWorkspace({ activeClass, activeSubject, slot, onLe
       suggestTopic()
     }
   }, [slot]) // eslint-disable-line
+
+  function handlePrintFull() {
+    const lesson = parsedLesson || parseLessonContent(content)
+    if (!lesson) return
+
+    const win = window.open('', '_blank', 'width=900,height=900')
+    if (!win) return
+
+    const metaLine = [
+      selectedSubject || activeClass.subject,
+      activeClass.grade ? `Jg. ${activeClass.grade}` : null,
+      activeClass.school_type,
+    ].filter(Boolean).join(' · ')
+
+    const gesamtdauer = (lesson.phasen ?? []).reduce((s, p) => s + (p.dauer_minuten ?? 0), 0)
+
+    const phasenHtml = (lesson.phasen ?? []).map((p) => `
+      <div class="phase">
+        <div class="phase-header">
+          <span class="phase-num">${p.nummer ?? ''}</span>
+          <span class="phase-titel">${p.titel ?? ''}</span>
+          ${p.dauer_minuten ? `<span class="phase-dauer">${p.dauer_minuten} min</span>` : ''}
+        </div>
+        ${p.kurzfassung ? `<p class="phase-kurz">${p.kurzfassung}</p>` : ''}
+        ${p.inhalt ? `<p class="phase-inhalt">${p.inhalt}</p>` : ''}
+        ${p.lehreraktion ? `<p class="phase-aktion">👩‍🏫 ${p.lehreraktion}</p>` : ''}
+        ${p.schueleraktion ? `<p class="phase-aktion">👥 ${p.schueleraktion}</p>` : ''}
+        ${p.material?.length ? `<ul class="phase-material">${p.material.map(m => `<li>${m}</li>`).join('')}</ul>` : ''}
+        ${p.transition ? `<p class="phase-transition">→ ${p.transition}</p>` : ''}
+      </div>`).join('')
+
+    const diffHtml = (lesson.differenzierung?.foerderung || lesson.differenzierung?.erweiterung) ? `
+      <div class="section">
+        <h2>Differenzierung</h2>
+        ${lesson.differenzierung.foerderung ? `<p><strong>🔽 Förderung:</strong> ${lesson.differenzierung.foerderung}</p>` : ''}
+        ${lesson.differenzierung.erweiterung ? `<p><strong>🔼 Erweiterung:</strong> ${lesson.differenzierung.erweiterung}</p>` : ''}
+      </div>` : ''
+
+    const wissHtml = lesson.wissenschaft ? `
+      <div class="section wissenschaft">
+        <h2>Wissenschaftlicher Hintergrund</h2>
+        <p>${lesson.wissenschaft}</p>
+      </div>` : ''
+
+    win.document.write(`<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>${lesson.titel ?? 'Unterrichtsstunde'}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.55;
+      color: #111;
+      background: #fff;
+      padding: 20mm 18mm;
+      max-width: 210mm;
+      margin: 0 auto;
+    }
+    h1 { font-size: 16pt; font-weight: 700; margin-bottom: 2mm; }
+    h2 { font-size: 11pt; font-weight: 700; margin-bottom: 3mm; color: #333; }
+    .meta { font-size: 9pt; color: #666; margin-bottom: 1mm; }
+    .dauer { font-size: 9pt; color: #999; margin-bottom: 5mm; }
+    .logo { font-size: 8pt; font-weight: 700; color: #ccc; letter-spacing: 0.08em; float: right; }
+    .lernziele { margin-bottom: 8mm; }
+    .lernziele ul { padding-left: 5mm; }
+    .lernziele li { margin-bottom: 1mm; font-size: 10pt; }
+    .section { margin-bottom: 8mm; }
+    .phase { margin-bottom: 6mm; padding-bottom: 5mm; border-bottom: 0.5pt solid #e0e0e0; }
+    .phase:last-child { border-bottom: none; }
+    .phase-header { display: flex; align-items: baseline; gap: 3mm; margin-bottom: 2mm; }
+    .phase-num { font-size: 18pt; font-weight: 700; color: #ddd; line-height: 1; }
+    .phase-titel { font-size: 11pt; font-weight: 700; flex: 1; }
+    .phase-dauer { font-size: 9pt; color: #999; }
+    .phase-kurz { font-size: 10.5pt; font-weight: 600; margin-bottom: 2mm; }
+    .phase-inhalt { font-size: 9.5pt; color: #333; margin-bottom: 1.5mm; }
+    .phase-aktion { font-size: 9.5pt; color: #333; margin-bottom: 1.5mm; }
+    .phase-material { font-size: 9pt; color: #555; padding-left: 4mm; margin-bottom: 1.5mm; }
+    .phase-transition { font-size: 8.5pt; color: #aaa; font-style: italic; margin-top: 1.5mm; }
+    .wissenschaft { background: #f9f9f9; padding: 4mm; border-radius: 2mm; }
+    .wissenschaft p { font-size: 9pt; color: #444; }
+    @media print { body { padding: 12mm 14mm; } }
+  </style>
+</head>
+<body>
+  <div class="logo">PrepLess</div>
+  <h1>${lesson.titel ?? 'Unterrichtsstunde'}</h1>
+  ${metaLine ? `<p class="meta">${metaLine}</p>` : ''}
+  ${gesamtdauer ? `<p class="dauer">${gesamtdauer} Minuten</p>` : ''}
+  ${(lesson.lernziele ?? []).length ? `
+  <div class="lernziele section">
+    <h2>Lernziele</h2>
+    <ul>${(lesson.lernziele ?? []).map(z => `<li>${z}</li>`).join('')}</ul>
+  </div>` : ''}
+  <div class="section">
+    <h2>Phasen</h2>
+    ${phasenHtml}
+  </div>
+  ${diffHtml}
+  ${wissHtml}
+  <script>
+    window.onload = function() {
+      window.print();
+      window.onafterprint = function() { window.close(); };
+    };
+  </script>
+</body>
+</html>`)
+    win.document.close()
+  }
 
   function handlePrint() {
     const lesson = parsedLesson || parseLessonContent(content)
@@ -575,13 +701,35 @@ export default function LessonWorkspace({ activeClass, activeSubject, slot, onLe
          )}
          <div className="workspace-actions-spacer" />
         {hasContent && !isStreaming && (
-          <button
-            className="btn-secondary"
-            type="button"
-            onClick={handlePrint}
-          >
-            🖨 Drucken
-          </button>
+          <div className="print-menu-wrap">
+            <button
+              className="btn-secondary"
+              type="button"
+              onClick={() => setShowPrintMenu((v) => !v)}
+            >
+              🖨 Drucken ▾
+            </button>
+            {showPrintMenu && (
+              <div className="print-menu">
+                <button
+                  type="button"
+                  className="print-menu-item"
+                  onClick={() => { handlePrintFull(); setShowPrintMenu(false) }}
+                >
+                  <span className="print-menu-label">Vollständig</span>
+                  <span className="print-menu-desc">Alle Details auf A4</span>
+                </button>
+                <button
+                  type="button"
+                  className="print-menu-item"
+                  onClick={() => { handlePrint(); setShowPrintMenu(false) }}
+                >
+                  <span className="print-menu-label">Handzettel</span>
+                  <span className="print-menu-desc">A6-Karten zum Ausschneiden</span>
+                </button>
+              </div>
+            )}
+          </div>
         )}
         {savedLessonId && !isStreaming && (
           <button
