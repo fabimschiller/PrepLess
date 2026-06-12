@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useClasses } from '../context/ClassesContext'
 import { SCHOOL_TYPE_SHORT } from '../lib/schoolTypes'
 import StudentsAdmin from '../components/admin/StudentsAdmin'
@@ -13,8 +14,19 @@ const TABS = [
 ]
 
 export default function Verwaltung() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [tab, setTab] = useState('curriculum')
   const { activeClass } = useClasses()
+
+  // Tab aus URL-Parametern setzen (z.B. ?tab=curriculum)
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    if (tabParam && TABS.find(t => t.id === tabParam)) {
+      setTab(tabParam)
+      // URL-Parameter entfernen nach Verwendung
+      setSearchParams({}, { replace: true })
+    }
+  }, [])
 
   const noClassHint = tab !== 'settings' && !activeClass
 
