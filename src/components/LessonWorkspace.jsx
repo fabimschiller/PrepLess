@@ -995,15 +995,18 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
 
         {hasContent && !isStreaming && (
           <div className="workspace-save-row">
-             {/* Speichern-Button: nach Auto-Save versteckt, nach Refinement wieder sichtbar */}
-             {(!wasAutoSaved || refining) && (
+             {/* Speichern-Button: 
+                 - Nach Auto-Save: versteckt (wenn nicht verfeinert)
+                 - Nach Refinement: sichtbar und aktiv wenn hasUnsavedRefinement === true
+                 - Disabled nur wenn gerade gespeichert wird */}
+             {(!wasAutoSaved || hasUnsavedRefinement) && (
                <button
                  className="btn-primary"
                  type="button"
                  onClick={handleSave}
-                 disabled={saving || (refining && !hasUnsavedRefinement)}
+                 disabled={saving || !hasUnsavedRefinement}
                >
-                 {saving ? 'Speichert…' : refining ? '💾 Verfeinerte Version speichern' : '💾 Stunde speichern'}
+                 {saving ? 'Speichert…' : hasUnsavedRefinement ? '💾 Verfeinerte Version speichern' : '💾 Stunde speichern'}
                </button>
              )}
             
