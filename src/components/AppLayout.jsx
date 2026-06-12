@@ -7,8 +7,8 @@ import { SCHOOL_TYPE_SHORT, SCHOOL_TYPES } from '../lib/schoolTypes'
 import './AppLayout.css'
 
 const NAV_ITEMS = [
-  { to: '/unterricht', label: 'Unterricht' },
-  { to: '/verwaltung', label: 'Konfiguration' },
+  { to: '/unterricht', label: 'Unterricht vorbereiten' },
+  { to: '/verwaltung', label: 'Klasseneinstellungen' },
   { to: '/mein-lernen', label: '🌱 Mein Lernen' },
 ]
 

@@ -29,7 +29,7 @@ export default function ClassPicker() {
   if (classes.length === 0) {
     return (
       <div className="class-picker class-picker-empty">
-        Keine Klassen – bitte in „Konfiguration" anlegen.
+        Keine Klassen – bitte in „Klasseneinstellungen" anlegen.
       </div>
     )
   }
