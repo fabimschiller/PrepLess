@@ -25,6 +25,49 @@ import { generateLesson, suggestMaterials, suggestLearning, suggestTopic as sugg
 import LessonRenderer from './LessonRenderer'
 import './LessonWorkspace.css'
 
+// ─── Lesson Content Parser ────────────────────────────────────────────────────
+/**
+ * Versucht content als Lesson-JSON zu parsen.
+ * Probiert 3 Strategien:
+ *   1. Direktes JSON.parse
+ *   2. Markdown-Codeblock-Extraktion (```json ... ```)
+ *   3. Objekt-Extraktion (erstes { bis letztes })
+ * 
+ * @param {string} content - Roher content-String
+ * @returns {Object|null} Geparste Lesson oder null
+ */
+function parseLessonContent(content) {
+  if (!content || !content.trim()) return null
+
+  // Versuch 1: Direktes JSON.parse
+  try {
+    const parsed = JSON.parse(content)
+    if (parsed && typeof parsed === 'object' && parsed.titel) return parsed
+  } catch (e) { /* try next strategy */ }
+
+  // Versuch 2: Markdown-Codeblock
+  try {
+    const match = content.match(/```(?:json)?\s*([\s\S]*?)```/)
+    if (match) {
+      const parsed = JSON.parse(match[1].trim())
+      if (parsed && typeof parsed === 'object' && parsed.titel) return parsed
+    }
+  } catch (e) { /* try next strategy */ }
+
+  // Versuch 3: Objekt-Extraktion
+  try {
+    const firstBrace = content.indexOf('{')
+    const lastBrace = content.lastIndexOf('}')
+    if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
+      const jsonStr = content.substring(firstBrace, lastBrace + 1)
+      const parsed = JSON.parse(jsonStr)
+      if (parsed && typeof parsed === 'object' && parsed.titel) return parsed
+    }
+  } catch (e) { /* give up */ }
+
+  return null
+}
+
 // ─── Partial JSON Extraction ──────────────────────────────────────────────────
 function extractPartialLesson(jsonString) {
   const partial = {}
@@ -254,52 +297,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       return
     }
 
-    console.log('content slice:', content?.substring(0, 100))
-
-    try {
-      // Versuch 1: Direktes JSON.parse
-      const parsed = JSON.parse(content)
-      if (parsed && typeof parsed === 'object' && parsed.titel) {
-        console.log('✓ JSON.parse succeeded, parsedLesson set')
-        setParsedLesson(parsed)
-        return
-      }
-    } catch (e) {
-      console.log('JSON parse failed, trying markdown extraction')
-    }
-
-    // Versuch 2: Markdown-Codeblock-Extraktion
-    try {
-      const match = content.match(/```(?:json)?\s*([\s\S]*?)```/)
-      if (match) {
-        const parsed = JSON.parse(match[1].trim())
-        if (parsed && typeof parsed === 'object' && parsed.titel) {
-          setParsedLesson(parsed)
-          return
-        }
-      }
-    } catch (e) {
-      console.log('Markdown extraction failed')
-    }
-
-    // Versuch 3: Objekt-Extraktion von { bis }
-    try {
-      const firstBrace = content.indexOf('{')
-      const lastBrace = content.lastIndexOf('}')
-      if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
-        const jsonStr = content.substring(firstBrace, lastBrace + 1)
-        const parsed = JSON.parse(jsonStr)
-        if (parsed && typeof parsed === 'object' && parsed.titel) {
-          setParsedLesson(parsed)
-          return
-        }
-      }
-    } catch (e) {
-      console.log('Object extraction failed')
-    }
-
-    // Kein gültiges JSON gefunden → Fallback auf Plaintext
-    setParsedLesson(null)
+    const parsed = parseLessonContent(content)
+    setParsedLesson(parsed)
   }, [content])
 
   // Klassenwechsel: Content sofort löschen damit kein alter Inhalt sichtbar bleibt
@@ -314,12 +313,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
 
   // Slot wechselt: Felder zurücksetzen / vorbelegen
   useEffect(() => {
-    console.log('🎯 Slot useEffect fired', {
-      slotExists: !!slot,
-      hasLesson: !!slot?.lesson,
-      lessonId: slot?.lesson?.id
-    })
-
     abortRef.current?.abort()
     setGenerating(false)
     setRefining(false)
@@ -337,30 +330,21 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     }
 
     const { unit, slotIndex, lesson } = slot
-    console.log('🎯 After destructure:', { unit: !!unit, slotIndex, lesson: !!lesson })
     
     if (lesson) {
-      console.log('Loading lesson:', lesson.id, 'hasContent:', !!lesson.content, 'contentSlice:', lesson.content?.substring(0, 100))
       setTopic(lesson.title ?? '')
       setContent(lesson.content ?? '')  // Setzt content → trigger Parser-useEffect
       setSavedLessonId(lesson.id)
       setLessonStatus(lesson.status ?? 'planned')
       // parsedLesson wird durch den content-useEffect gesetzt
     } else {
-      console.log('🎯 Empty slot detected, resetting state...')
       setTopic('')
       setContent('')
       setSavedLessonId(null)
       setLessonStatus(null)
       setParsedLesson(null)
       // Leerer Slot → suggestTopic aufrufen
-      console.log('🎯 About to call suggestTopic()')
-      try {
-        suggestTopic()
-        console.log('🎯 suggestTopic() called successfully')
-      } catch (err) {
-        console.error('🎯 Error calling suggestTopic:', err)
-      }
+      suggestTopic()
     }
   }, [slot]) // eslint-disable-line
 
@@ -409,18 +393,12 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   }
 
   async function suggestTopic() {
-    console.log('suggestTopic: start', { activeClass: !!activeClass, slot: !!slot })
-    if (!activeClass || !slot) {
-      console.log('suggestTopic: early return - missing activeClass or slot')
-      return
-    }
+    if (!activeClass || !slot) return
     setTopicSuggesting(true)
     try {
-      // Letzte 5 Stunden für Kontext
       const { data: prevLessons } = await getLessons(activeClass.id, 5)
       const previousLessons = (prevLessons ?? []).map((l) => l.title).filter(Boolean)
 
-      console.log('suggestTopic: calling suggestTopicAPI from lib/api')
       const result = await suggestTopicAPI({
         suggestionOnly: true,
         slotIndex: slot.slotIndex,
@@ -430,17 +408,12 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
         previousLessons,
       })
 
-      console.log('suggestTopic: response', { result })
       if (result.suggestions && Array.isArray(result.suggestions)) {
-        console.log('suggestTopic: suggestions set', result.suggestions)
         setAiSuggestions(result.suggestions)
-      } else {
-        console.log('suggestTopic: no suggestions in response', { suggestions: result.suggestions })
       }
     } catch (err) {
       console.error('suggestTopic error:', err)
       setAiSuggestions([])
-      // Fehler ignorieren, Nutzer kann manuell eingeben
     } finally {
       setTopicSuggesting(false)
     }
@@ -451,7 +424,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     setGenerating(true); setGenError(null); setContent('')
     setPartialLesson({}); setParsedLesson(null)
     setSavedLessonId(null); setSaveSuccess(null); setSaveError(null)
-    setHasUnsavedRefinement(false)  // Keine ungespeicherten Verfeinerungen nach neuer Generierung
+    setHasUnsavedRefinement(false)
 
     try {
       const { response, signal } = await callGenerateStream()
@@ -459,69 +432,22 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       await streamSSE(response, (chunk) => {
         acc += chunk
         setContent(acc)
-        
-        // Progressive JSON-Extraktion: extrahiere Felder während Streaming
         const partial = extractPartialLesson(acc)
         setPartialLesson(partial)
       }, signal)
 
-       // Nach Ende des Streams: vollständiges JSON parsen
-        try {
-          const parsed = JSON.parse(acc)
-          if (parsed && typeof parsed === 'object' && parsed.titel) {
-            setParsedLesson(parsed)
-            setPartialLesson(parsed)
-            // Auto-Save nach erfolgreicher Generation
-            console.log('Stream erfolgreich, starte Auto-Save...')
-            await handleAutoSave(acc)
-            return
-          }
-        } catch (e) {
-          console.log('Full JSON parse failed')
-        }
-
-        // Fallback: Markdown-Extraktion
-        try {
-          const match = acc.match(/```(?:json)?\s*([\s\S]*?)```/)
-          if (match) {
-            const parsed = JSON.parse(match[1].trim())
-            if (parsed && typeof parsed === 'object' && parsed.titel) {
-              setParsedLesson(parsed)
-              setPartialLesson(parsed)
-              // Auto-Save nach erfolgreicher Generation
-              console.log('Markdown-Parse erfolgreich, starte Auto-Save...')
-              await handleAutoSave(acc)
-              return
-            }
-          }
-        } catch (e) {
-          console.log('Markdown parse failed')
-        }
-
-        // Fallback: Objekt-Extraktion
-        try {
-          const firstBrace = acc.indexOf('{')
-          const lastBrace = acc.lastIndexOf('}')
-          if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
-            const jsonStr = acc.substring(firstBrace, lastBrace + 1)
-            const parsed = JSON.parse(jsonStr)
-            if (parsed && typeof parsed === 'object' && parsed.titel) {
-              setParsedLesson(parsed)
-              setPartialLesson(parsed)
-              // Auto-Save nach erfolgreicher Generation
-              console.log('Objekt-Extraktion erfolgreich, starte Auto-Save...')
-              await handleAutoSave(acc)
-              return
-            }
-          }
-        } catch (e) {
-          console.log('Object extract failed')
-        }
-     } catch (err) {
-       if (err.name !== 'AbortError') setGenError(err.message ?? String(err))
-     } finally {
-       setGenerating(false)
-     }
+      // Nach Stream-Ende: parsen und Auto-Save
+      const parsed = parseLessonContent(acc)
+      if (parsed) {
+        setParsedLesson(parsed)
+        setPartialLesson(parsed)
+        await handleAutoSave(acc)
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') setGenError(err.message ?? String(err))
+    } finally {
+      setGenerating(false)
+    }
   }
 
   async function handleRefine() {
@@ -533,7 +459,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     setPartialLesson({})
 
     try {
-      // previousContent muss als JSON-String übergeben werden
       const previousContent = parsedLesson ? JSON.stringify(parsedLesson) : content
       const { response, signal } = await callGenerateStream({
         previousContent,
@@ -543,67 +468,26 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       await streamSSE(response, (chunk) => {
         acc += chunk
         setContent(acc)
-        
-        // Progressive JSON-Extraktion während Refinement
         const partial = extractPartialLesson(acc)
         setPartialLesson(partial)
       }, signal)
       setRefinement('')
 
-       // Nach Ende des Streams: vollständiges JSON parsen
-       try {
-         const parsed = JSON.parse(acc)
-         if (parsed && typeof parsed === 'object' && parsed.titel) {
-           setParsedLesson(parsed)
-           setPartialLesson(parsed)
-           setHasUnsavedRefinement(true)
-           return
-         }
-       } catch (e) {
-         console.log('Full JSON parse failed')
-       }
-
-       // Fallback: Markdown-Extraktion
-       try {
-         const match = acc.match(/```(?:json)?\s*([\s\S]*?)```/)
-         if (match) {
-           const parsed = JSON.parse(match[1].trim())
-           if (parsed && typeof parsed === 'object' && parsed.titel) {
-             setParsedLesson(parsed)
-             setPartialLesson(parsed)
-             setHasUnsavedRefinement(true)
-             return
-           }
-         }
-       } catch (e) {
-         console.log('Markdown parse failed')
-       }
-
-       // Fallback: Objekt-Extraktion
-       try {
-         const firstBrace = acc.indexOf('{')
-         const lastBrace = acc.lastIndexOf('}')
-         if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
-           const jsonStr = acc.substring(firstBrace, lastBrace + 1)
-           const parsed = JSON.parse(jsonStr)
-           if (parsed && typeof parsed === 'object' && parsed.titel) {
-             setParsedLesson(parsed)
-             setPartialLesson(parsed)
-             setHasUnsavedRefinement(true)
-             return
-           }
-         }
-       } catch (e) {
-         console.log('Object extract failed')
-       }
-     } catch (err) {
-       if (err.name !== 'AbortError') {
-         setGenError(err.message ?? String(err))
-         setParsedLesson(prevParsedLesson)
-       }
-     } finally {
-       setRefining(false)
-     }
+      // Nach Stream-Ende: parsen und als unsaved markieren
+      const parsed = parseLessonContent(acc)
+      if (parsed) {
+        setParsedLesson(parsed)
+        setPartialLesson(parsed)
+        setHasUnsavedRefinement(true)
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        setGenError(err.message ?? String(err))
+        setParsedLesson(prevParsedLesson)
+      }
+    } finally {
+      setRefining(false)
+    }
   }
 
   function handleAbort() {
@@ -683,79 +567,58 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       content: content.trim(),
     })
 
-      setSaving(false)
-      if (insErr) { setSaveError(insErr.message); return }
-      console.log('lesson.id from Supabase:', lesson.id, 'type:', typeof lesson.id)
-      setSavedLessonId(lesson.id)
-      setLessonStatus(lesson.status ?? 'planned')
-      setSaveSuccess('Stunde gespeichert.')
-      setHasUnsavedRefinement(false)
-      onLessonSaved?.(lesson)
+    setSaving(false)
+    if (insErr) { setSaveError(insErr.message); return }
+    setSavedLessonId(lesson.id)
+    setLessonStatus(lesson.status ?? 'planned')
+    setSaveSuccess('Stunde gespeichert.')
+    setHasUnsavedRefinement(false)
+    onLessonSaved?.(lesson)
   }
 
-    async function handleAutoSave(contentToSave) {
-      console.log('🔄 Auto-Save start', { hasContent: !!contentToSave, activeClass: !!activeClass, slot: !!slot })
-      
-      // Nutze den übergebenen contentToSave oder den State-Wert
-      const saveContent = contentToSave ?? content
-      if (!saveContent.trim() || !activeClass || !slot) {
-        console.log('🔄 Auto-Save early return - missing data')
-        return
-      }
-      setAutoSaving(true); setAutoSaveError(null)
+  async function handleAutoSave(contentToSave) {
+    const saveContent = contentToSave ?? content
+    if (!saveContent.trim() || !activeClass || !slot) return
+    setAutoSaving(true); setAutoSaveError(null)
 
-      const { data: lesson, error: insErr } = await upsertLesson({
-        ...(savedLessonId ? { id: savedLessonId } : {}),
-        class_id: activeClass.id,
-        curriculum_unit_id: slot.unit.id,
-        position: slot.slotIndex + 1,
-        title: topic.trim() || `Stunde ${slot.slotIndex + 1}`,
-        content: saveContent.trim(),
-      })
+    const { data: lesson, error: insErr } = await upsertLesson({
+      ...(savedLessonId ? { id: savedLessonId } : {}),
+      class_id: activeClass.id,
+      curriculum_unit_id: slot.unit.id,
+      position: slot.slotIndex + 1,
+      title: topic.trim() || `Stunde ${slot.slotIndex + 1}`,
+      content: saveContent.trim(),
+    })
 
-      setAutoSaving(false)
-      if (insErr) { 
-        setAutoSaveError(insErr.message)
-        console.error('Auto-Save fehlgeschlagen:', insErr.message)
-        return 
-      }
-      
-       console.log('Auto-Save erfolgreich:', lesson.id)
-       setSavedLessonId(lesson.id)
-       setLessonStatus(lesson.status ?? 'planned')
-       setWasAutoSaved(true)
-       setHasUnsavedRefinement(false)
-       onLessonSaved?.(lesson)
-       
-       // Erfolgs-Meldung nach 3 Sekunden ausblenden
-       setTimeout(() => setWasAutoSaved(false), 3000)
-   }
-
-   async function handleDelete() {
-     console.log('handleDelete called, savedLessonId:', savedLessonId)
-    if (!savedLessonId) {
-      console.log('savedLessonId is null/undefined, returning')
+    setAutoSaving(false)
+    if (insErr) {
+      setAutoSaveError(insErr.message)
+      console.error('Auto-Save fehlgeschlagen:', insErr.message)
       return
     }
-    
-    const confirmed = window.confirm('Stunde wirklich löschen?')
-    console.log('Confirm dialog result:', confirmed)
-    if (!confirmed) return
 
-    console.log('Starting DELETE for id:', savedLessonId)
+    setSavedLessonId(lesson.id)
+    setLessonStatus(lesson.status ?? 'planned')
+    setWasAutoSaved(true)
+    setHasUnsavedRefinement(false)
+    onLessonSaved?.(lesson)
+
+    // Erfolgs-Meldung nach 3 Sekunden ausblenden
+    setTimeout(() => setWasAutoSaved(false), 3000)
+  }
+
+  async function handleDelete() {
+    if (!savedLessonId) return
+    if (!window.confirm('Stunde wirklich löschen?')) return
+
     const { error } = await deleteLesson(savedLessonId)
-
-    console.log('DELETE response - error:', error)
-
     if (error) {
       console.error('Löschen fehlgeschlagen:', error)
       setGenError(`Fehler beim Löschen: ${error.message}`)
       return
     }
 
-    console.log('DELETE successful, reloading page')
-    // Temporärer Fix: reload() statt State-Reset
-    // TODO: Später saubere Cache-Invalidierung implementieren
+    // TODO: Später saubere Cache-Invalidierung statt reload()
     window.location.reload()
   }
 
@@ -874,14 +737,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       ? partialLesson 
       : parsedLesson
 
-    console.log('🔥 RENDER v2', {
-      hasParsedLesson: parsedLesson !== null,
-      parsedLessonTitel: parsedLesson?.titel,
-      hasPartialLesson: Object.keys(partialLesson).length > 0,
-      hasUnsavedRefinement: hasUnsavedRefinement,
-      savedLessonId: savedLessonId,
-      wasAutoSaved: wasAutoSaved,
-    })
+
 
   return (
     <section className="workspace card">
@@ -1268,9 +1124,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
 
        {/* Start-Modal mit QR-Code */}
        {showStartModal && (() => {
-         console.log('savedLessonId type:', typeof savedLessonId, savedLessonId)
          const qrUrl = `https://prep-less-lyart.vercel.app/stunde/${savedLessonId}`
-         console.log('[QR-Code Modal] QR URL:', qrUrl)
          return (
            <div className="start-modal-overlay" onClick={() => setShowStartModal(false)}>
              <div className="start-modal" onClick={(e) => e.stopPropagation()}>
