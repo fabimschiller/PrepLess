@@ -344,10 +344,10 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       setSavedLessonId(null)
       setLessonStatus(null)
       setParsedLesson(null)
-      // Starte Themenvorschlag für leeren Slot
-      suggestTopic()
-    }
-  }, [slot?.unit?.id, slot?.slotIndex, slot?.lesson?.id]) // eslint-disable-line
+       // Starte Themenvorschlag für leeren Slot
+       suggestTopic()
+     }
+   }, [slot]) // eslint-disable-line
 
   async function callGenerateStream({ previousContent, refinementRequest } = {}) {
     if (!activeClass) return
@@ -995,18 +995,15 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
 
         {hasContent && !isStreaming && (
           <div className="workspace-save-row">
-             {/* Speichern-Button: 
-                 - Nach Auto-Save: versteckt (wenn nicht verfeinert)
-                 - Nach Refinement: sichtbar und aktiv wenn hasUnsavedRefinement === true
-                 - Disabled nur wenn gerade gespeichert wird */}
-             {(!wasAutoSaved || hasUnsavedRefinement) && (
+             {/* Speichern-Button: nur sichtbar wenn ungespeicherte Verfeinerung */}
+             {hasUnsavedRefinement && (
                <button
                  className="btn-primary"
                  type="button"
                  onClick={handleSave}
-                 disabled={saving || !hasUnsavedRefinement}
+                 disabled={saving}
                >
-                 {saving ? 'Speichert…' : hasUnsavedRefinement ? '💾 Verfeinerte Version speichern' : '💾 Stunde speichern'}
+                 {saving ? 'Speichert…' : '💾 Verfeinerte Version speichern'}
                </button>
              )}
             
