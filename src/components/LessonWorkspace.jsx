@@ -790,15 +790,17 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
    const isStreaming = generating || refining
    const hasContent = content.length > 0
 
-   console.log('[LessonWorkspace Render]', {
-     savedLessonId,
-     isStreaming,
-     hasContent,
-     hasPartialLesson: Object.keys(partialLesson).length > 0,
-     partialLessonKeys: Object.keys(partialLesson),
-     contentLength: content.length,
-     parsedLessonExists: !!parsedLesson,
-   })
+    console.log('[LessonWorkspace Render]', {
+      savedLessonId,
+      isStreaming,
+      hasContent,
+      hasPartialLesson: Object.keys(partialLesson).length > 0,
+      partialLessonKeys: Object.keys(partialLesson),
+      contentLength: content.length,
+      parsedLessonExists: !!parsedLesson,
+      parsedLessonKeys: parsedLesson ? Object.keys(parsedLesson) : [],
+      renderCondition: isStreaming || Object.keys(partialLesson).length > 0 || parsedLesson,
+    })
 
   return (
     <section className="workspace card">
