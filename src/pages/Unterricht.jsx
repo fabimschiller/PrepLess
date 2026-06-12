@@ -122,7 +122,7 @@ export default function Unterricht() {
                 <section className="card">
                   <p className="empty-state">
                     {activeSubject
-                      ? `Noch kein Lehrplan für ${activeSubject}. Lege ihn unter Verwaltung → Lehrplan an.`
+                      ? `Noch kein Lehrplan für ${activeSubject}. Lege ihn unter Konfiguration → Lehrplan an.`
                       : 'Kein Fach ausgewählt.'}
                   </p>
                 </section>

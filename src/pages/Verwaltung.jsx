@@ -22,7 +22,7 @@ export default function Verwaltung() {
     <div className="verwaltung-page">
       <header className="page-header">
         <div>
-          <h1>Verwaltung</h1>
+          <h1>Konfiguration</h1>
           <p className="page-subtitle">
             {activeClass
               ? `${activeClass.name}${activeClass.school_type

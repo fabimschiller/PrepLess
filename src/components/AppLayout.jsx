@@ -8,7 +8,7 @@ import './AppLayout.css'
 
 const NAV_ITEMS = [
   { to: '/unterricht', label: 'Unterricht' },
-  { to: '/verwaltung', label: 'Verwaltung' },
+  { to: '/verwaltung', label: 'Konfiguration' },
   { to: '/mein-lernen', label: 'Mein Lernen' },
 ]
 
