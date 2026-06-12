@@ -329,23 +329,10 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     if (lesson) {
       console.log('Loading lesson:', lesson.id, 'hasContent:', !!lesson.content, 'contentSlice:', lesson.content?.substring(0, 100))
       setTopic(lesson.title ?? '')
-      setContent(lesson.content ?? '')
+      setContent(lesson.content ?? '')  // Setzt content → trigger Parser-useEffect
       setSavedLessonId(lesson.id)
       setLessonStatus(lesson.status ?? 'planned')
-      
-      // Direkt parsedLesson setzen wenn content vorhanden
-      if (lesson.content) {
-        try {
-          const parsed = JSON.parse(lesson.content)
-          setParsedLesson(parsed)
-          console.log('✓ Parsed saved lesson content directly')
-        } catch (e) {
-          console.log('Failed to parse saved lesson content:', e.message)
-          setParsedLesson(null)
-        }
-      } else {
-        setParsedLesson(null)
-      }
+      // parsedLesson wird durch den content-useEffect gesetzt
     } else {
       setTopic('')
       setContent('')
