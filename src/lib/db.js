@@ -246,7 +246,7 @@ export async function deleteCurriculumUnitsBySubject(classId, subject) {
 export async function getObservations(studentIds) {
   return await supabase
     .from('observations')
-    .select('student_id, note')
+    .select('id, student_id, note, created_at')
     .in('student_id', studentIds)
     .order('created_at', { ascending: false })
 }

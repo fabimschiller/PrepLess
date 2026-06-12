@@ -21,6 +21,13 @@ function formatDate(iso) {
   })
 }
 
+function formatTime(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+}
+
 // ─── Icon-Komponenten ─────────────────────────────────────────────────────────
 
 function EyeIcon() {
@@ -98,7 +105,9 @@ function HistoryPanel({ student, onClose }) {
           {entries.map((e) => (
             <li key={e.id} className="focus-panel-entry">
               <div className="focus-panel-entry-head">
-                <span className="focus-panel-date">{formatDate(e.created_at)}</span>
+                <span className="focus-panel-date">
+                  {formatDate(e.created_at)}{formatTime(e.created_at) ? `, ${formatTime(e.created_at)}` : ''}
+                </span>
                 {e.lessons?.title && (
                   <span className="focus-panel-lesson">{e.lessons.title}</span>
                 )}
