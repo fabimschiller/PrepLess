@@ -7,13 +7,13 @@ import SettingsAdmin from '../components/admin/SettingsAdmin'
 import './Verwaltung.css'
 
 const TABS = [
-  { id: 'students',   label: 'Schüler' },
   { id: 'curriculum', label: 'Lehrplan' },
-  { id: 'settings',   label: 'Einstellungen' },
+  { id: 'students',   label: 'Schüler' },
+  { id: 'settings',   label: 'Sonstiges' },
 ]
 
 export default function Verwaltung() {
-  const [tab, setTab] = useState('students')
+  const [tab, setTab] = useState('curriculum')
   const { activeClass } = useClasses()
 
   const noClassHint = tab !== 'settings' && !activeClass
