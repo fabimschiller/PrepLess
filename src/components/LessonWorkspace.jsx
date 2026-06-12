@@ -201,6 +201,11 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
 
   const abortRef = useRef(null)
 
+  // Debug: hasUnsavedRefinement änderungen
+  useEffect(() => {
+    console.log('🔴 hasUnsavedRefinement changed:', hasUnsavedRefinement)
+  }, [hasUnsavedRefinement])
+
   // Modal-Close: Escape-Taste
   useEffect(() => {
     if (!showMaterialsModal && !showLearningModal && !showStartModal) return
@@ -451,6 +456,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     setGenerating(true); setGenError(null); setContent('')
     setPartialLesson({}); setParsedLesson(null)
     setSavedLessonId(null); setSaveSuccess(null); setSaveError(null)
+    setHasUnsavedRefinement(false)  // Keine ungespeicherten Verfeinerungen nach neuer Generierung
 
     try {
       const { response, signal } = await callGenerateStream()
