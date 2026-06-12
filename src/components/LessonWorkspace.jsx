@@ -201,11 +201,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
 
   const abortRef = useRef(null)
 
-  // Debug: hasUnsavedRefinement änderungen
-  useEffect(() => {
-    console.log('🔴 hasUnsavedRefinement changed:', hasUnsavedRefinement)
-  }, [hasUnsavedRefinement])
-
   // Modal-Close: Escape-Taste
   useEffect(() => {
     if (!showMaterialsModal && !showLearningModal && !showStartModal) return
@@ -1035,20 +1030,16 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
 
          {hasContent && !isStreaming && (
            <div className="workspace-save-row">
-              {console.log('🎯 Save-row rendering, hasUnsavedRefinement:', hasUnsavedRefinement)}
               {/* Speichern-Button: nur sichtbar wenn ungespeicherte Verfeinerung */}
               {hasUnsavedRefinement && (
-                <>
-                  {console.log('🎯 Rendering refinement button')}
-                  <button
-                    className="btn-primary"
-                    type="button"
-                    onClick={handleSave}
-                    disabled={saving}
-                  >
-                    {saving ? 'Speichert…' : '💾 Verfeinerte Version speichern'}
-                  </button>
-                </>
+                <button
+                  className="btn-primary"
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? 'Speichert…' : '💾 Verfeinerte Version speichern'}
+                </button>
               )}
             
             {/* Auto-Save Status */}
