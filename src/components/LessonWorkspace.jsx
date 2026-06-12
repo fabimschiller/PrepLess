@@ -337,6 +337,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     }
 
     const { unit, slotIndex, lesson } = slot
+    console.log('🎯 After destructure:', { unit: !!unit, slotIndex, lesson: !!lesson })
+    
     if (lesson) {
       console.log('Loading lesson:', lesson.id, 'hasContent:', !!lesson.content, 'contentSlice:', lesson.content?.substring(0, 100))
       setTopic(lesson.title ?? '')
@@ -345,14 +347,20 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       setLessonStatus(lesson.status ?? 'planned')
       // parsedLesson wird durch den content-useEffect gesetzt
     } else {
+      console.log('🎯 Empty slot detected, resetting state...')
       setTopic('')
       setContent('')
       setSavedLessonId(null)
       setLessonStatus(null)
       setParsedLesson(null)
       // Leerer Slot → suggestTopic aufrufen
-      console.log('🎯 Calling suggestTopic for empty slot')
-      suggestTopic()
+      console.log('🎯 About to call suggestTopic()')
+      try {
+        suggestTopic()
+        console.log('🎯 suggestTopic() called successfully')
+      } catch (err) {
+        console.error('🎯 Error calling suggestTopic:', err)
+      }
     }
   }, [slot]) // eslint-disable-line
 
