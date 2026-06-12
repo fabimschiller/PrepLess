@@ -98,6 +98,12 @@ Deno.serve(async (req: Request) => {
     return jsonError(405, 'Method not allowed. Use POST.');
   }
 
+  // Auth-Check: JWT muss vorhanden sein
+  const authHeader = req.headers.get('Authorization') ?? '';
+  if (!authHeader) {
+    return jsonError(401, 'Authorization-Header fehlt.');
+  }
+
   const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
   if (!apiKey) {
     return jsonError(500, 'ANTHROPIC_API_KEY ist nicht gesetzt.');

@@ -428,3 +428,13 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/generate-curriculum/deno.json"
 entrypoint = "./functions/generate-curriculum/index.ts"
+
+[functions.suggest-materials]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/suggest-materials/index.ts"
+
+[functions.suggest-learning]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/suggest-learning/index.ts"
