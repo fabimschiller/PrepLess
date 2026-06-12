@@ -9,7 +9,7 @@ import './AppLayout.css'
 const NAV_ITEMS = [
   { to: '/unterricht', label: 'Unterricht' },
   { to: '/verwaltung', label: 'Konfiguration' },
-  { to: '/mein-lernen', label: 'Mein Lernen' },
+  { to: '/mein-lernen', label: '🌱 Mein Lernen' },
 ]
 
 const DOT_COLORS = ['#aa3bff', '#2563eb', '#16a34a', '#d99b1f', '#d12d2d']
