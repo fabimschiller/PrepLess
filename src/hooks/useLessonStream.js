@@ -136,6 +136,7 @@ export function parseLessonContent(content) {
  * @param {string[]} params.students             - Schüler-Array
  * @param {Function} params.handleAutoSave       - Auto-Save Callback aus useLessonSave
  * @param {Function} params.setHasUnsavedRefinement - Setter aus useLessonSave
+ * @param {string}   params.selectedSubject       - Ausgewähltes Fach für diese Stunde
  * @param {Function} params.resetSave            - Reset-Callback aus useLessonSave
  */
 export function useLessonStream({
@@ -144,6 +145,7 @@ export function useLessonStream({
   topic,
   students,
   content,
+  selectedSubject,
   setContent,
   handleAutoSave,
   setHasUnsavedRefinement,
@@ -183,7 +185,7 @@ export function useLessonStream({
 
     return {
       className: activeClass.name,
-      subject: (activeClass.subjects ?? []).join(', ') || activeClass.subject,
+      subject: selectedSubject || (activeClass.subjects ?? []).join(', ') || activeClass.subject,
       school_type: activeClass.school_type ?? '',
       grade: activeClass.grade,
       state: activeClass.state,

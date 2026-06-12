@@ -31,6 +31,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   const [content, setContent] = useState('')
   const [students, setStudents] = useState([])
   const [topicSuggestions, setTopicSuggestions] = useState([])
+  const [selectedSubject, setSelectedSubject] = useState('')
   const [materials, setMaterials] = useState(null)
   const [materialsLoading, setMaterialsLoading] = useState(false)
   const [showMaterialsModal, setShowMaterialsModal] = useState(false)
@@ -48,7 +49,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     hasUnsavedRefinement, setHasUnsavedRefinement,
     handleSave, handleAutoSave, handleDelete,
     reset: resetSave,
-  } = useLessonSave({ activeClass, slot, topic, content, onLessonSaved })
+  } = useLessonSave({ activeClass, slot, topic, content, selectedSubject, onLessonSaved })
 
   const {
     parsedLesson, setParsedLesson,
@@ -64,7 +65,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     handleAbort,
     suggestTopic,
     resetStream,
-  } = useLessonStream({ activeClass, slot, topic, students, content, setContent, handleAutoSave, setHasUnsavedRefinement, resetSave })
+  } = useLessonStream({ activeClass, slot, topic, students, content, selectedSubject, setContent, handleAutoSave, setHasUnsavedRefinement, resetSave })
 
   // Modal-Close: Escape-Taste
   useEffect(() => {
@@ -112,11 +113,12 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       })
   }, [activeClass?.id])
 
-  // Klassenwechsel: alles zurücksetzen
+  // Klassenwechsel: alles zurücksetzen + Fach initialisieren
   useEffect(() => {
     setTopic('')
     resetStream()
     resetSave()
+    setSelectedSubject(activeClass?.subjects?.[0] ?? activeClass?.subject ?? '')
   }, [activeClass?.id]) // eslint-disable-line
 
   // Slot wechselt: Felder zurücksetzen / vorbelegen
@@ -209,7 +211,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       const result = await suggestMaterials({
         lessonContent: content,
         lessonTitle: topic,
-        subject: activeClass.subject,
+        subject: selectedSubject || activeClass.subject,
         grade: activeClass.grade,
         schoolType: activeClass.school_type,
       })
@@ -230,7 +232,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       const result = await suggestLearning({
         lessonContent: content,
         lessonTitle: topic,
-        subject: activeClass.subject,
+        subject: selectedSubject || activeClass.subject,
         grade: activeClass.grade,
         schoolType: activeClass.school_type,
       })
@@ -329,10 +331,27 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
         <div>
           <h2>{unit.title} · Stunde {slotIndex + 1}</h2>
           <p className="card-subtitle">
-            {activeClass.subject} · Jg. {activeClass.grade} · {activeClass.state}
+            {selectedSubject || activeClass.subject} · Jg. {activeClass.grade} · {activeClass.state}
           </p>
         </div>
       </div>
+
+      {/* Fach-Auswahl: nur wenn Klasse mehrere Fächer hat */}
+      {(activeClass.subjects?.length ?? 0) > 1 && (
+        <div className="field">
+          <label htmlFor="ws-subject">Fach dieser Stunde</label>
+          <select
+            id="ws-subject"
+            value={selectedSubject}
+            onChange={(e) => setSelectedSubject(e.target.value)}
+            disabled={isStreaming}
+          >
+            {activeClass.subjects.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="field">
         <label htmlFor="ws-topic">Thema der Stunde</label>

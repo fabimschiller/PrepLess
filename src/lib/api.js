@@ -150,6 +150,39 @@ export async function suggestLearning(payload) {
   return await response.json()
 }
 
+// ─── IMPORT CURRICULUM ───────────────────────────────────────────────
+/**
+ * Importiere einen Lehrplan aus Freitext via KI
+ * @param {Object} payload - { classId, rawText }
+ */
+export async function importCurriculum(payload) {
+  const { data: sessionData } = await getSession()
+  const accessToken = sessionData?.session?.access_token
+
+  if (!accessToken) {
+    throw new Error('Nicht eingeloggt.')
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/import-curriculum`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '')
+    throw new Error(
+      `Lehrplan-Import fehlgeschlagen (${response.status})${errText ? `: ${errText}` : ''}`
+    )
+  }
+
+  return await response.json()
+}
+
 // ─── SUGGEST TOPIC ───────────────────────────────────────────────────
 /**
  * Schlag Stundentitel basierend auf Lehrplan vor

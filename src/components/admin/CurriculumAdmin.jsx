@@ -10,6 +10,7 @@ import {
   generateCurriculumForClass,
   monthLabel,
 } from '../../lib/curriculum'
+import { importCurriculum } from '../../lib/api'
 import './AdminTables.css'
 
 const MONTH_OPTIONS = Array.from({ length: 10 }, (_, i) => ({
@@ -30,6 +31,12 @@ function ClassCurriculumSection({ cls }) {
   const [regenerating, setRegenerating] = useState(false)
   const [regenError, setRegenError] = useState(null)
   const [regenSuccess, setRegenSuccess] = useState(null)
+
+  const [showImport, setShowImport] = useState(false)
+  const [importText, setImportText] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState(null)
+  const [importSuccess, setImportSuccess] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -93,6 +100,29 @@ function ClassCurriculumSection({ cls }) {
     setUnits((prev) => prev.filter((x) => x.id !== u.id))
   }
 
+  async function handleImport() {
+    if (!importText.trim()) return
+    if (
+      units.length > 0 &&
+      !confirm('Bestehende Einheiten werden durch den Import ersetzt. Fortfahren?')
+    ) return
+
+    setImporting(true)
+    setImportError(null)
+    setImportSuccess(null)
+    try {
+      const result = await importCurriculum({ classId: cls.id, rawText: importText.trim() })
+      await load()
+      setImportSuccess(`${result.count} Einheiten importiert.`)
+      setImportText('')
+      setShowImport(false)
+    } catch (err) {
+      setImportError(err.message ?? String(err))
+    } finally {
+      setImporting(false)
+    }
+  }
+
   async function regenerate(skipConfirm = false) {
     if (
       !skipConfirm &&
@@ -130,18 +160,80 @@ function ClassCurriculumSection({ cls }) {
             {cls.subject} · Jahrgang {cls.grade} · {cls.state}
           </p>
         </div>
-        {/* Neu-Generieren-Button nur anzeigen wenn schon Einheiten vorhanden */}
-        {units.length > 0 && (
+        <div style={{ display: 'flex', gap: 8 }}>
           <button
             type="button"
             className="btn-secondary"
-            onClick={() => regenerate(false)}
-            disabled={regenerating}
+            onClick={() => { setShowImport((v) => !v); setImportError(null) }}
+            disabled={regenerating || importing}
           >
-            {regenerating ? 'Generiert…' : 'Neu generieren'}
+            Eigenen Lehrplan importieren
           </button>
-        )}
+          {/* Neu-Generieren-Button nur anzeigen wenn schon Einheiten vorhanden */}
+          {units.length > 0 && (
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => regenerate(false)}
+              disabled={regenerating || importing}
+            >
+              {regenerating ? 'Generiert…' : 'Neu generieren'}
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Import-Bereich */}
+      {showImport && (
+        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <label htmlFor="import-text" style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+            Lehrplan als Text einfügen
+          </label>
+          <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted, #666)', margin: 0 }}>
+            Kopiere deinen Lehrplan aus einem PDF, Word-Dokument oder einer Website und füge ihn hier ein. Die KI extrahiert automatisch die Themeneinheiten.
+          </p>
+          <textarea
+            id="import-text"
+            rows={8}
+            placeholder="z.B.: 1. Quadratische Funktionen (10 Std., September–Oktober)&#10;2. Lineare Gleichungssysteme (8 Std., November)&#10;..."
+            value={importText}
+            onChange={(e) => setImportText(e.target.value)}
+            disabled={importing}
+            style={{ fontFamily: 'inherit', fontSize: '0.9rem', resize: 'vertical' }}
+          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={handleImport}
+              disabled={importing || !importText.trim()}
+            >
+              {importing ? 'Wird importiert…' : 'Lehrplan importieren'}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => { setShowImport(false); setImportText(''); setImportError(null) }}
+              disabled={importing}
+            >
+              Abbrechen
+            </button>
+          </div>
+          {importError && <div className="alert error">{importError}</div>}
+        </div>
+      )}
+
+      {importing && (
+        <div className="loading-indicator" style={{ marginTop: 8 }}>
+          <span className="spinner" />
+          <span>Lehrplan wird aus Text extrahiert…</span>
+        </div>
+      )}
+      {importSuccess && (
+        <div className="alert success" style={{ marginTop: 8 }}>
+          {importSuccess}
+        </div>
+      )}
 
       {regenerating && (
         <div className="loading-indicator" style={{ marginTop: 8 }}>

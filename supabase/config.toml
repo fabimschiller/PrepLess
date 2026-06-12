@@ -429,6 +429,11 @@ verify_jwt = true
 import_map = "./functions/generate-curriculum/deno.json"
 entrypoint = "./functions/generate-curriculum/index.ts"
 
+[functions.import-curriculum]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/import-curriculum/index.ts"
+
 [functions.suggest-materials]
 enabled = true
 verify_jwt = true

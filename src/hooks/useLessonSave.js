@@ -9,9 +9,10 @@ import { upsertLesson, deleteLesson } from '../lib/db'
  * @param {Object}   params.slot         - Aktiver Slot { unit, slotIndex }
  * @param {string}   params.topic        - Aktuelles Thema
  * @param {string}   params.content      - Aktueller Lesson-Content
+ * @param {string}   params.selectedSubject - Ausgewähltes Fach für diese Stunde
  * @param {Function} params.onLessonSaved - Callback nach erfolgreichem Speichern
  */
-export function useLessonSave({ activeClass, slot, topic, content, onLessonSaved }) {
+export function useLessonSave({ activeClass, slot, topic, content, selectedSubject, onLessonSaved }) {
   const [savedLessonId, setSavedLessonId] = useState(null)
   const [lessonStatus, setLessonStatus] = useState(null)
 
@@ -35,6 +36,7 @@ export function useLessonSave({ activeClass, slot, topic, content, onLessonSaved
       position: slot.slotIndex + 1,
       title: topic.trim() || `Stunde ${slot.slotIndex + 1}`,
       content: contentToSave.trim(),
+      subject: selectedSubject || activeClass.subject || null,
     }
   }
 
