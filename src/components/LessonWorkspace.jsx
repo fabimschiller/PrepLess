@@ -646,15 +646,12 @@ export default function LessonWorkspace({ activeClass, activeSubject, slot, onLe
              <button
                className="btn-primary"
                type="button"
-            onClick={() => {
-                  if (!materials) {
-                    handleSuggestMaterials()
-                  }
-                  setShowMaterialsModal(true)
-                }}
-               disabled={materialsLoading}
+               onClick={() => {
+                 if (!materials) handleSuggestMaterials()
+                 setShowMaterialsModal(true)
+               }}
              >
-               {materialsLoading ? 'Materialien werden vorgeschlagen…' : '📚 Material'}
+               📚 Material
              </button>
            )}
          </div>
