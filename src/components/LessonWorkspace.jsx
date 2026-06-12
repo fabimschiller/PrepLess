@@ -1020,19 +1020,23 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
          </div>
        )}
 
-        {hasContent && !isStreaming && (
-          <div className="workspace-save-row">
-             {/* Speichern-Button: nur sichtbar wenn ungespeicherte Verfeinerung */}
-             {hasUnsavedRefinement && (
-               <button
-                 className="btn-primary"
-                 type="button"
-                 onClick={handleSave}
-                 disabled={saving}
-               >
-                 {saving ? 'Speichert…' : '💾 Verfeinerte Version speichern'}
-               </button>
-             )}
+         {hasContent && !isStreaming && (
+           <div className="workspace-save-row">
+              {console.log('🎯 Save-row rendering, hasUnsavedRefinement:', hasUnsavedRefinement)}
+              {/* Speichern-Button: nur sichtbar wenn ungespeicherte Verfeinerung */}
+              {hasUnsavedRefinement && (
+                <>
+                  {console.log('🎯 Rendering refinement button')}
+                  <button
+                    className="btn-primary"
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving}
+                  >
+                    {saving ? 'Speichert…' : '💾 Verfeinerte Version speichern'}
+                  </button>
+                </>
+              )}
             
             {/* Auto-Save Status */}
             {autoSaving && <span className="workspace-save-status">Wird automatisch gespeichert…</span>}
