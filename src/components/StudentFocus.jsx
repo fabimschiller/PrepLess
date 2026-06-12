@@ -11,15 +11,14 @@ import './StudentFocus.css'
 const STATUS_ORDER = { red: 0, yellow: 1, green: 2, neutral: 3 }
 
 function formatDate(iso) {
-  try {
-    return new Date(iso).toLocaleDateString('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: '2-digit',
-    })
-  } catch {
-    return iso
-  }
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+  })
 }
 
 // ─── Icon-Komponenten ─────────────────────────────────────────────────────────
