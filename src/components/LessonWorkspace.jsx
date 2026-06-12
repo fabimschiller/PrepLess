@@ -7,7 +7,6 @@
  *   onLessonSaved – fn(lesson)
  */
 import { useEffect, useState } from 'react'
-import { QRCodeSVG as QRCode } from 'qrcode.react'
 import {
   getStudents as getStudentsDb,
   getCurriculumUnits,
@@ -21,6 +20,9 @@ import { suggestMaterials, suggestLearning } from '../lib/api'
 import { useLessonSave } from '../hooks/useLessonSave'
 import { useLessonStream } from '../hooks/useLessonStream'
 import LessonRenderer from './LessonRenderer'
+import MaterialsModal from './MaterialsModal'
+import LearningModal from './LearningModal'
+import StartModal from './StartModal'
 import './LessonWorkspace.css'
 
 // ─── Haupt-Komponente ─────────────────────────────────────────────────────────
@@ -516,242 +518,28 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
 
       {/* Material-Modal Overlay */}
       {showMaterialsModal && (
-        <div className="materials-modal-overlay" onClick={() => setShowMaterialsModal(false)}>
-          <div className="materials-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="materials-modal-header">
-              <h2>📚 Ergänzendes Material zur Stunde</h2>
-              <button
-                className="materials-modal-close"
-                type="button"
-                onClick={() => setShowMaterialsModal(false)}
-                aria-label="Schließen"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="materials-modal-content">
-               {!materials ? (
-                 <div className="materials-error">
-                   <p>Keine Materialien geladen.</p>
-                 </div>
-               ) : (
-                 <>
-                   <h3 className="materials-title">📚 Lernmaterialien zur Stunde</h3>
-
-                  {materials.videos && materials.videos.length > 0 && (
-            <div className="material-category">
-              <h4 className="material-category-title">🎥 Videos</h4>
-              <div className="material-list">
-                {materials.videos.map((item, idx) => (
-                  <div key={`video-${idx}`} className="material-item">
-                    <p className="material-description">{item.beschreibung}</p>
-                    <div className="material-search-code">{item.suchbegriff}</div>
-                    {item.plattform && <p className="material-source">{item.plattform}</p>}
-                    <button
-                      type="button"
-                      className="material-search-btn"
-                      onClick={() => window.open(`https://google.com/search?q=${encodeURIComponent(item.suchbegriff)}`, '_blank')}
-                    >
-                      🔍 Suchen
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {materials.artikel && materials.artikel.length > 0 && (
-            <div className="material-category">
-              <h4 className="material-category-title">📖 Artikel</h4>
-              <div className="material-list">
-                {materials.artikel.map((item, idx) => (
-                  <div key={`artikel-${idx}`} className="material-item">
-                    <p className="material-description">{item.beschreibung}</p>
-                    <div className="material-search-code">{item.suchbegriff}</div>
-                    {item.quelle && <p className="material-source">{item.quelle}</p>}
-                    <button
-                      type="button"
-                      className="material-search-btn"
-                      onClick={() => window.open(`https://google.com/search?q=${encodeURIComponent(item.suchbegriff)}`, '_blank')}
-                    >
-                      🔍 Suchen
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {materials.podcasts && materials.podcasts.length > 0 && (
-            <div className="material-category">
-              <h4 className="material-category-title">🎧 Podcasts</h4>
-              <div className="material-list">
-                {materials.podcasts.map((item, idx) => (
-                  <div key={`podcast-${idx}`} className="material-item">
-                    <p className="material-description">{item.beschreibung}</p>
-                    <div className="material-search-code">{item.suchbegriff}</div>
-                    {item.plattform && <p className="material-source">{item.plattform}</p>}
-                    <button
-                      type="button"
-                      className="material-search-btn"
-                      onClick={() => window.open(`https://google.com/search?q=${encodeURIComponent(item.suchbegriff)}`, '_blank')}
-                    >
-                      🔍 Suchen
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {materials.uebungsmaterial && materials.uebungsmaterial.length > 0 && (
-            <div className="material-category">
-              <h4 className="material-category-title">📋 Übungsmaterial</h4>
-              <div className="material-list">
-                {materials.uebungsmaterial.map((item, idx) => (
-                  <div key={`uebung-${idx}`} className="material-item">
-                    <p className="material-description">{item.beschreibung}</p>
-                    <div className="material-search-code">{item.suchbegriff}</div>
-                    {item.quelle && <p className="material-source">{item.quelle}</p>}
-                    <button
-                      type="button"
-                      className="material-search-btn"
-                      onClick={() => window.open(`https://google.com/search?q=${encodeURIComponent(item.suchbegriff)}`, '_blank')}
-                    >
-                      🔍 Suchen
-                    </button>
-                  </div>
-                ))}
-              </div>
-             </div>
-           )}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+        <MaterialsModal
+          materials={materials}
+          onClose={() => setShowMaterialsModal(false)}
+        />
       )}
 
-      {/* Learning-Modal Overlay */}
       {showLearningModal && (
-        <div className="learning-modal-overlay" onClick={() => setShowLearningModal(false)}>
-          <div className="learning-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="learning-modal-header">
-              <h2>🎓 Fortbildungsressourcen für Lehrkräfte</h2>
-              <button
-                className="learning-modal-close"
-                type="button"
-                onClick={() => setShowLearningModal(false)}
-                aria-label="Schließen"
-              >
-                ✕
-              </button>
-            </div>
+        <LearningModal
+          learningResources={learningResources}
+          viewedResources={viewedResources}
+          viewingResourceId={viewingResourceId}
+          onMarkViewed={markAsViewed}
+          onClose={() => setShowLearningModal(false)}
+        />
+      )}
 
-            <div className="learning-modal-content">
-               {!learningResources || learningResources.length === 0 ? (
-                 <div className="learning-error">
-                   <p>Keine Ressourcen geladen.</p>
-                 </div>
-               ) : (
-                 <>
-                   <div className="learning-resources-list">
-                    {learningResources.map((resource, idx) => (
-                      <div
-                        key={`resource-${idx}`}
-                        className={`learning-resource-item ${viewedResources.has(resource.title) ? 'viewed' : ''}`}
-                      >
-                        <div className="learning-resource-header">
-                          <h3 className="learning-resource-title">{resource.title}</h3>
-                          <span className="learning-resource-xp">+{resource.xp} XP</span>
-                        </div>
-                        <p className="learning-resource-description">{resource.beschreibung}</p>
-                        <div className="learning-resource-meta">
-                          <span className="learning-resource-type">{resource.typ}</span>
-                          <span className="learning-resource-time">⏱ {resource.minuten} Min</span>
-                        </div>
-                        <div className="learning-resource-search">
-                          <span className="learning-resource-search-term">{resource.suchbegriff}</span>
-                          <button
-                            type="button"
-                            className="learning-search-btn"
-                            onClick={() => window.open(`https://google.com/search?q=${encodeURIComponent(resource.suchbegriff)}`, '_blank')}
-                          >
-                            🔍 Suchen
-                          </button>
-                        </div>
-                        {resource.plattform && (
-                          <p className="learning-resource-plattform">📍 {resource.plattform}</p>
-                        )}
-                        <div className="learning-resource-action">
-                          <button
-                            type="button"
-                            className="learning-mark-viewed-btn"
-                            onClick={() => markAsViewed(resource)}
-                            disabled={viewedResources.has(resource.title) || viewingResourceId === resource.title}
-                          >
-                            {viewedResources.has(resource.title) ? '✓ Gesehen' : `+ ${resource.xp} XP · Gesehen`}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-       )}
-
-       {/* Start-Modal mit QR-Code */}
-       {showStartModal && (() => {
-         const qrUrl = `https://prep-less-lyart.vercel.app/stunde/${savedLessonId}`
-         return (
-           <div className="start-modal-overlay" onClick={() => setShowStartModal(false)}>
-             <div className="start-modal" onClick={(e) => e.stopPropagation()}>
-               <div className="start-modal-header">
-                 <h2>▶ Stunde starten</h2>
-                 <button
-                   className="start-modal-close"
-                   type="button"
-                   onClick={() => setShowStartModal(false)}
-                   aria-label="Schließen"
-                 >
-                   ✕
-                 </button>
-               </div>
-
-               <div className="start-modal-content">
-                 <p className="start-modal-text">Scanne den QR-Code mit deinem Smartphone</p>
-                 
-                 <div className="start-modal-qr-container">
-                   <QRCode 
-                     value={qrUrl}
-                     size={200}
-                     level="H"
-                     includeMargin={true}
-                   />
-                 </div>
-
-                 <p className="start-modal-url">
-                   <a 
-                     href={qrUrl}
-                     target="_blank"
-                     rel="noopener noreferrer"
-                   >
-                     {qrUrl}
-                   </a>
-                 </p>
-
-                 <p style={{ fontSize: '11px', wordBreak: 'break-all', color: '#999', marginTop: '12px' }}>
-                   {qrUrl}
-                 </p>
-               </div>
-             </div>
-           </div>
-         )
-       })()}
+      {showStartModal && (
+        <StartModal
+          lessonId={savedLessonId}
+          onClose={() => setShowStartModal(false)}
+        />
+      )}
 
        {hasContent && (
          <div className="workspace-refine">
