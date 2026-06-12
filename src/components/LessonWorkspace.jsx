@@ -568,16 +568,13 @@ export default function LessonWorkspace({ activeClass, activeSubject, slot, onLe
            <button
              className="btn-primary"
              type="button"
-          onClick={() => {
-                if (!learningResources) {
-                  handleSuggestLearning()
-                }
-                setShowLearningModal(true)
-              }}
-             disabled={learningLoading}
-           >
-             {learningLoading ? 'Ressourcen werden vorgeschlagen…' : '🎓 Dahinter steckt…'}
-           </button>
+           onClick={() => {
+                 if (!learningResources) handleSuggestLearning()
+                 setShowLearningModal(true)
+               }}
+            >
+              🎓 Dahinter steckt…
+            </button>
          )}
          <div className="workspace-actions-spacer" />
         {hasContent && !isStreaming && (
@@ -677,6 +674,7 @@ export default function LessonWorkspace({ activeClass, activeSubject, slot, onLe
       {showLearningModal && (
         <LearningModal
           learningResources={learningResources}
+          isLoading={learningLoading}
           viewedResources={viewedResources}
           viewingResourceId={viewingResourceId}
           onMarkViewed={markAsViewed}

@@ -1,4 +1,4 @@
-export default function LearningModal({ learningResources, viewedResources, viewingResourceId, onMarkViewed, onClose }) {
+export default function LearningModal({ learningResources, isLoading, viewedResources, viewingResourceId, onMarkViewed, onClose }) {
   return (
     <div className="learning-modal-overlay" onClick={onClose}>
       <div className="learning-modal" onClick={(e) => e.stopPropagation()}>
@@ -15,7 +15,12 @@ export default function LearningModal({ learningResources, viewedResources, view
         </div>
 
         <div className="learning-modal-content">
-          {!learningResources || learningResources.length === 0 ? (
+          {isLoading ? (
+            <div className="learning-loading">
+              <span className="spinner" />
+              <p>Ressourcen werden zusammengestellt…</p>
+            </div>
+          ) : !learningResources || learningResources.length === 0 ? (
             <div className="learning-error">
               <p>Keine Ressourcen geladen.</p>
             </div>
