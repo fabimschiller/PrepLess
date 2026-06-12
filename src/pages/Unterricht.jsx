@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useClasses } from '../context/ClassesContext'
 import { SCHOOL_TYPE_SHORT } from '../lib/schoolTypes'
 import CurriculumStrip from '../components/CurriculumStrip'
@@ -7,6 +8,7 @@ import StudentFocus from '../components/StudentFocus'
 import './Unterricht.css'
 
 export default function Unterricht() {
+  const navigate = useNavigate()
   const { activeClass } = useClasses()
 
   // Fach-Auswahl
@@ -16,6 +18,11 @@ export default function Unterricht() {
     ? [activeClass.subject]
     : []
   const [activeSubject, setActiveSubject] = useState(subjects[0] ?? null)
+  
+  // Navigiere zu Klasseneinstellungen (Lehrplan-Tab)
+  const goToClassSettings = () => {
+    navigate(`/klasseneinstellungen?classId=${activeClass.id}`)
+  }
 
   // Wenn Klasse wechselt: Fach zurücksetzen
   useEffect(() => {
@@ -104,43 +111,62 @@ export default function Unterricht() {
 
       {activeClass && (
         <>
-          <CurriculumStrip
-            key={`${classId}-${activeSubject}`}
-            classId={classId}
-            activeSubject={activeSubject}
-            activeClass={activeClass}
-            onHasUnitsChange={setHasUnits}
-            onSlotSelect={handleSlotSelect}
-            savedLesson={savedLesson}
-            updatedLesson={updatedLesson}
-            deletedLessonId={deletedLessonId}
-          />
-
-          <div className="unterricht-grid">
-            <div className="unterricht-main">
-              {!hasUnits ? (
-                <section className="card">
-                  <p className="empty-state">
-                    {activeSubject
-                      ? `Noch kein Lehrplan für ${activeSubject}. Lege ihn unter Konfiguration → Lehrplan an.`
-                      : 'Kein Fach ausgewählt.'}
-                  </p>
-                </section>
-              ) : (
-                <LessonWorkspace
-                  activeClass={activeClass}
-                  activeSubject={activeSubject}
-                  slot={activeSlot}
-                  onLessonSaved={handleLessonSaved}
-                  onLessonUpdated={setUpdatedLesson}
-                  onObservationsSaved={() => setStudentRefresh((n) => n + 1)}
-                />
-              )}
+          {/* Wenn keine Fächer: Hinweistext + Button zu Klasseneinstellungen */}
+          {subjects.length === 0 ? (
+            <div className="card">
+              <p className="empty-state">
+                Bitte zuerst Fächer für diese Klasse anlegen.
+              </p>
+              <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}>
+                <button
+                  className="btn btn-primary"
+                  onClick={goToClassSettings}
+                >
+                  Fächer anlegen
+                </button>
+              </div>
             </div>
-            <aside className="unterricht-side">
-              <StudentFocus classId={classId} refreshKey={studentRefresh} />
-            </aside>
-          </div>
+          ) : (
+            <>
+              <CurriculumStrip
+                key={`${classId}-${activeSubject}`}
+                classId={classId}
+                activeSubject={activeSubject}
+                activeClass={activeClass}
+                onHasUnitsChange={setHasUnits}
+                onSlotSelect={handleSlotSelect}
+                savedLesson={savedLesson}
+                updatedLesson={updatedLesson}
+                deletedLessonId={deletedLessonId}
+              />
+
+              <div className="unterricht-grid">
+                <div className="unterricht-main">
+                  {!hasUnits ? (
+                    <section className="card">
+                      <p className="empty-state">
+                        {activeSubject
+                          ? `Noch kein Lehrplan für ${activeSubject}. Lege ihn unter Konfiguration → Lehrplan an.`
+                          : 'Kein Fach ausgewählt.'}
+                      </p>
+                    </section>
+                  ) : (
+                    <LessonWorkspace
+                      activeClass={activeClass}
+                      activeSubject={activeSubject}
+                      slot={activeSlot}
+                      onLessonSaved={handleLessonSaved}
+                      onLessonUpdated={setUpdatedLesson}
+                      onObservationsSaved={() => setStudentRefresh((n) => n + 1)}
+                    />
+                  )}
+                </div>
+                <aside className="unterricht-side">
+                  <StudentFocus classId={classId} refreshKey={studentRefresh} />
+                </aside>
+              </div>
+            </>
+          )}
         </>
       )}
     </div>
