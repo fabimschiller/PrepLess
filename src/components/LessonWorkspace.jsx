@@ -130,8 +130,10 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
 
     if (lesson) {
       setTopic(lesson.title ?? '')
-      setContent(lesson.content ?? '')  // Setzt content → trigger Parser-useEffect
+      setContent(lesson.content ?? '')
       resetSave({ lessonId: lesson.id, status: lesson.status ?? 'planned' })
+      // parsedLesson direkt setzen — kein useEffect mehr der content parsed
+      setParsedLesson(parseLessonContent(lesson.content ?? ''))
     } else {
       setTopic('')
       suggestTopic()
