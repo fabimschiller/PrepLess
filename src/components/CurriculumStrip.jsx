@@ -6,10 +6,12 @@ import {
 } from '../lib/db'
 import {
   computeUnitStatus,
+  generateCurriculumForClass,
   getCurrentSchoolMonth,
   monthRangeLabel,
   pickCurrentUnit,
 } from '../lib/curriculum'
+import { importCurriculum } from '../lib/api'
 import ConductedModal from './ConductedModal'
 import './CurriculumStrip.css'
 
@@ -29,6 +31,15 @@ export default function CurriculumStrip({
   const [units, setUnits] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+
+  // Lehrplan generieren / importieren (Leer-State)
+  const [generating, setGenerating] = useState(false)
+  const [genError, setGenError] = useState(null)
+  const [showImport, setShowImport] = useState(false)
+  const [importText, setImportText] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState(null)
+
   // Aufgeklappte Einheit
   const [expandedUnitId, setExpandedUnitId] = useState(null)
   const [userExpanded, setUserExpanded] = useState(false)
@@ -228,6 +239,33 @@ export default function CurriculumStrip({
     setConductedModal(null)
   }
 
+  async function handleGenerate() {
+    if (!activeClass || !activeSubject) return
+    setGenerating(true); setGenError(null)
+    try {
+      await generateCurriculumForClass(activeClass, activeSubject)
+      load()
+    } catch (err) {
+      setGenError(err.message ?? String(err))
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  async function handleImport() {
+    if (!importText.trim() || !activeClass || !activeSubject) return
+    setImporting(true); setImportError(null)
+    try {
+      await importCurriculum({ classId: activeClass.id, rawText: importText.trim(), subject: activeSubject })
+      setImportText(''); setShowImport(false)
+      load()
+    } catch (err) {
+      setImportError(err.message ?? String(err))
+    } finally {
+      setImporting(false)
+    }
+  }
+
   if (!classId) return null
 
   return (
@@ -241,9 +279,51 @@ export default function CurriculumStrip({
 
       {!loading && !error && units.length === 0 && (
         <div className="strip-empty">
-          <p className="empty-state">
-            Kein Lehrplan vorhanden. Lege ihn unter Verwaltung → Lehrplan an.
-          </p>
+          {generating ? (
+            <div className="loading-indicator">
+              <span className="spinner" /><span>Lehrplan wird generiert…</span>
+            </div>
+          ) : importing ? (
+            <div className="loading-indicator">
+              <span className="spinner" /><span>Lehrplan wird importiert…</span>
+            </div>
+          ) : showImport ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 560 }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+                Kopiere deinen Lehrplan für <strong>{activeSubject}</strong> hier rein:
+              </p>
+              <textarea
+                rows={6}
+                placeholder={`z.B.: 1. Quadratische Funktionen (10 Std., September–Oktober)\n2. Lineare Gleichungssysteme…`}
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                style={{ fontFamily: 'inherit', fontSize: '0.875rem', resize: 'vertical' }}
+                autoFocus
+              />
+              {importError && <div className="alert error">{importError}</div>}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="button" className="btn-primary btn-sm" onClick={handleImport} disabled={!importText.trim()}>
+                  Importieren
+                </button>
+                <button type="button" className="btn-secondary" onClick={() => { setShowImport(false); setImportText(''); setImportError(null) }}>
+                  Abbrechen
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {genError && <div className="alert error" style={{ marginBottom: 8 }}>{genError}</div>}
+              <p className="empty-state">Noch kein Lehrplan für {activeSubject ?? 'dieses Fach'}.</p>
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button type="button" className="btn-primary btn-sm" onClick={handleGenerate}>
+                  Lehrplan generieren
+                </button>
+                <button type="button" className="btn-secondary btn-sm" onClick={() => setShowImport(true)}>
+                  Eigenen importieren
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
