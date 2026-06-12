@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import {
+  getProfile,
+  getLearningProgress,
+} from '../lib/db'
+import { getSession } from '../lib/auth'
 import './MeinLernen.css'
 
 // Level-Logik
@@ -96,7 +100,7 @@ export default function MeinLernen() {
 
   async function loadData() {
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
+      const { data: sessionData } = await getSession()
       if (!sessionData?.session?.user) {
         setError('Nicht eingeloggt')
         setLoading(false)
@@ -106,30 +110,14 @@ export default function MeinLernen() {
       const userId = sessionData.session.user.id
 
       // Lade Profil-Daten
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('total_xp, level')
-        .eq('id', userId)
-        .single()
+      const { data: profileData, error: profileError } = await getProfile(userId)
 
       if (profileError) throw profileError
 
       setProfile(profileData || { total_xp: 0, level: 1 })
 
       // Lade Learning Progress mit Lektion-Info
-      const { data: progressData, error: progressError } = await supabase
-        .from('learning_progress')
-        .select(`
-          id,
-          resource_title,
-          resource_type,
-          xp_earned,
-          viewed_at,
-          lesson_id,
-          lessons(title)
-        `)
-        .eq('user_id', userId)
-        .order('viewed_at', { ascending: false })
+      const { data: progressData, error: progressError } = await getLearningProgress(userId)
 
       if (progressError) throw progressError
 

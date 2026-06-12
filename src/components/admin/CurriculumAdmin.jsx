@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import {
+  getCurriculumUnits,
+  updateCurriculumUnit,
+  deleteCurriculumUnit,
+  deleteCurriculumUnitsByClass,
+} from '../../lib/db'
 import { useClasses } from '../../context/ClassesContext'
 import {
   generateCurriculumForClass,
@@ -29,13 +34,7 @@ function ClassCurriculumSection({ cls }) {
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
-    const { data, error: err } = await supabase
-      .from('curriculum_units')
-      .select(
-        'id, class_id, position, title, description, estimated_hours, start_month, end_month'
-      )
-      .eq('class_id', cls.id)
-      .order('position', { ascending: true })
+    const { data, error: err } = await getCurriculumUnits(cls.id)
     if (err) {
       setError(err.message)
       setUnits([])
@@ -73,12 +72,7 @@ function ClassCurriculumSection({ cls }) {
       start_month: Number(editValues.start_month),
       end_month: Number(editValues.end_month),
     }
-    const { data, error: updErr } = await supabase
-      .from('curriculum_units')
-      .update(payload)
-      .eq('id', editId)
-      .select()
-      .single()
+    const { data, error: updErr } = await updateCurriculumUnit(editId, payload)
     if (updErr) {
       alert(updErr.message)
       return
@@ -91,10 +85,7 @@ function ClassCurriculumSection({ cls }) {
 
   async function deleteUnit(u) {
     if (!confirm(`Einheit „${u.title}" wirklich löschen?`)) return
-    const { error: delErr } = await supabase
-      .from('curriculum_units')
-      .delete()
-      .eq('id', u.id)
+    const { error: delErr } = await deleteCurriculumUnit(u.id)
     if (delErr) {
       alert(delErr.message)
       return
@@ -117,10 +108,7 @@ function ClassCurriculumSection({ cls }) {
     setRegenSuccess(null)
     try {
       if (units.length > 0) {
-        const { error: delErr } = await supabase
-          .from('curriculum_units')
-          .delete()
-          .eq('class_id', cls.id)
+        const { error: delErr } = await deleteCurriculumUnitsByClass(cls.id)
         if (delErr) throw new Error(delErr.message)
       }
       await generateCurriculumForClass(cls)

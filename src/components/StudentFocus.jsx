@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import {
+  getStudents as getStudentsDb,
+  getObservations,
+  createObservation,
+} from '../lib/db'
 import { statusFromObservation, STATUS_LABEL } from '../lib/studentStatus'
 import StudentDetailModal from './StudentDetailModal'
 import './StudentFocus.css'
@@ -65,16 +69,11 @@ function HistoryPanel({ student, onClose }) {
 
   useEffect(() => {
     let cancelled = false
-    supabase
-      .from('observations')
-      .select('id, note, created_at, lessons(title)')
-      .eq('student_id', student.id)
-      .order('created_at', { ascending: false })
-      .limit(5)
+    getObservations([student.id])
       .then(({ data, error: err }) => {
         if (cancelled) return
         if (err) setError(err.message)
-        else setEntries(data ?? [])
+        else setEntries((data ?? []).slice(0, 5))
         setLoading(false)
       })
     return () => { cancelled = true }
@@ -133,22 +132,22 @@ function AddObservationForm({ student, onSaved, onCancel }) {
     setSaving(true)
     setError(null)
 
-    const { data, error: insErr } = await supabase
-      .from('observations')
-      .insert({
-        student_id: student.id,
-        note: text,
-        lesson_id: null,
-      })
-      .select('id, note, created_at')
-      .single()
+    const { error: insErr } = await createObservation({
+      student_id: student.id,
+      note: text,
+      lesson_id: null,
+    })
 
     setSaving(false)
     if (insErr) {
       setError(insErr.message)
       return
     }
-    onSaved(data)
+    onSaved({
+      id: crypto.randomUUID?.() || Date.now(),
+      note: text,
+      created_at: new Date().toISOString(),
+    })
   }
 
   return (
@@ -211,11 +210,7 @@ export default function StudentFocus({ classId, refreshKey = 0 }) {
     setError(null)
 
     ;(async () => {
-      const { data: studentsData, error: sErr } = await supabase
-        .from('students')
-        .select('id, class_id, name, notes, created_at')
-        .eq('class_id', classId)
-        .order('name', { ascending: true })
+      const { data: studentsData, error: sErr } = await getStudentsDb(classId)
 
       if (cancelled) return
       if (sErr) {
@@ -236,11 +231,7 @@ export default function StudentFocus({ classId, refreshKey = 0 }) {
       }
 
       const ids = list.map((s) => s.id)
-      const { data: obs } = await supabase
-        .from('observations')
-        .select('student_id, note, created_at')
-        .in('student_id', ids)
-        .order('created_at', { ascending: false })
+      const { data: obs } = await getObservations(ids)
 
       if (cancelled) return
       const latestMap = {}

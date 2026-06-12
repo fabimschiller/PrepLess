@@ -6,7 +6,7 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { supabase } from '../lib/supabase'
+import { getClasses } from '../lib/db'
 
 const STORAGE_KEY = 'prepless.activeClassId'
 
@@ -32,10 +32,7 @@ export function ClassesProvider({ children }) {
   const loadClasses = useCallback(async () => {
     setLoading(true)
     setError(null)
-    const { data, error: err } = await supabase
-      .from('classes')
-      .select('id, name, subject, subjects, school_type, grade, state, created_at')
-      .order('created_at', { ascending: false })
+    const { data, error: err } = await getClasses()
 
     if (err) {
       setError(err.message)

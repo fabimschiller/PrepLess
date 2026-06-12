@@ -10,7 +10,10 @@
  *   onClose    – Modal schließen ohne Aktion
  */
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import {
+  updateLesson,
+  createObservations,
+} from '../lib/db'
 import './ConductedModal.css'
 
 function formatDate(iso) {
@@ -36,10 +39,10 @@ export default function ConductedModal({ lessonId, students, onDone, onClose }) 
 
   async function markConducted() {
     const now = new Date().toISOString()
-    const { error: updErr } = await supabase
-      .from('lessons')
-      .update({ status: 'conducted', conducted_at: now })
-      .eq('id', lessonId)
+    const { error: updErr } = await updateLesson(lessonId, {
+      status: 'conducted',
+      conducted_at: now,
+    })
     if (updErr) throw new Error(updErr.message)
     return now
   }
@@ -58,7 +61,7 @@ export default function ConductedModal({ lessonId, students, onDone, onClose }) 
         .filter((r) => r.note.length > 0)
 
       if (rows.length > 0) {
-        const { error: insErr } = await supabase.from('observations').insert(rows)
+        const { error: insErr } = await createObservations(rows)
         if (insErr) throw new Error(insErr.message)
       }
 

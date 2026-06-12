@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
 import './StudentDetailModal.css'
 
 function formatDate(iso) {

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { signUp, signIn } from '../lib/auth'
 import './Login.css'
 
 export default function Login() {
@@ -28,10 +28,7 @@ export default function Login() {
 
     try {
       if (isRegister) {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-        })
+        const { data, error } = await signUp(email, password)
         if (error) throw error
 
         // Wenn E-Mail-Bestätigung in Supabase aktiviert ist, gibt es noch keine Session.
@@ -43,10 +40,7 @@ export default function Login() {
           )
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
+        const { error } = await signIn(email, password)
         if (error) throw error
         navigate('/', { replace: true })
       }

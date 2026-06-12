@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { getLesson, updateLesson } from '../lib/db'
 import './StundenView.css'
 
 export default function StundenView() {
@@ -24,11 +24,7 @@ export default function StundenView() {
     async function load() {
       console.log('1. lessonId:', lessonId)
       
-      const { data, error } = await supabase
-        .from('lessons')
-        .select('*')
-        .eq('id', lessonId)
-        .maybeSingle()
+      const { data, error } = await getLesson(lessonId)
       
       console.log('2. data:', data)
       console.log('3. error:', error)
@@ -54,10 +50,7 @@ export default function StundenView() {
     if (!lessonId) return
     setMarking(true)
     try {
-      const { error: updateError } = await supabase
-        .from('lessons')
-        .update({ status: 'conducted' })
-        .eq('id', lessonId)
+      const { error: updateError } = await updateLesson(lessonId, { status: 'conducted' })
 
       if (updateError) throw updateError
       // Nach erfolgreichem Update: kurz warten, dann zurück

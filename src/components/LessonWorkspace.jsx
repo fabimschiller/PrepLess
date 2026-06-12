@@ -8,7 +8,20 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { QRCodeSVG as QRCode } from 'qrcode.react'
-import { supabase } from '../lib/supabase'
+import {
+  getStudents as getStudentsDb,
+  getCurriculumUnits,
+  getLessons,
+  getObservations,
+  upsertLesson,
+  deleteLesson,
+  getLearningProgressByLesson,
+  createLearningProgress,
+  getProfile,
+  updateProfile,
+} from '../lib/db'
+import { getSession } from '../lib/auth'
+import { generateLesson, suggestMaterials, suggestLearning } from '../lib/api'
 import LessonRenderer from './LessonRenderer'
 import './LessonWorkspace.css'
 
@@ -210,22 +223,14 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   // Für den Generate-Payload: Schüler + letzte Beobachtungen
   useEffect(() => {
     if (!activeClass?.id) { setStudents([]); return }
-    supabase
-      .from('students')
-      .select('id, name, notes')
-      .eq('class_id', activeClass.id)
-      .order('name', { ascending: true })
+    getStudentsDb(activeClass.id)
       .then(({ data }) => setStudents(data ?? []))
   }, [activeClass?.id])
 
   // Curriculum Units für Topic-Datalist laden
   useEffect(() => {
     if (!activeClass?.id) { setTopicSuggestions([]); return }
-    supabase
-      .from('curriculum_units')
-      .select('id, title, estimated_hours')
-      .eq('class_id', activeClass.id)
-      .order('position', { ascending: true })
+    getCurriculumUnits(activeClass.id)
       .then(({ data: units }) => {
         if (!units) return
         const suggestions = []
@@ -336,19 +341,11 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   async function callGenerateStream({ previousContent, refinementRequest } = {}) {
     if (!activeClass) return
 
-    const { data: sessionData } = await supabase.auth.getSession()
-    const accessToken = sessionData?.session?.access_token
-    if (!accessToken) throw new Error('Nicht eingeloggt.')
-
     // Letzte Beobachtungen je Schüler für den Prompt
     const studentNames = students.map((s) => s.name)
     const latestObs = {}
     if (students.length) {
-      const { data: obs } = await supabase
-        .from('observations')
-        .select('student_id, note')
-        .in('student_id', students.map((s) => s.id))
-        .order('created_at', { ascending: false })
+      const { data: obs } = await getObservations(students.map((s) => s.id))
       if (obs) {
         for (const o of obs) {
           if (!latestObs[o.student_id]) latestObs[o.student_id] = o.note
@@ -359,51 +356,28 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     for (const s of students) studentNotes[s.name] = latestObs[s.id] ?? s.notes ?? ''
 
     // Letzte 5 Stunden für Kontext
-    const { data: prevLessons } = await supabase
-      .from('lessons')
-      .select('title, generated_at')
-      .eq('class_id', activeClass.id)
-      .order('generated_at', { ascending: false })
-      .limit(5)
+    const { data: prevLessons } = await getLessons(activeClass.id, 5)
     const previousLessons = (prevLessons ?? []).map((l) => l.title).filter(Boolean)
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
     const controller = new AbortController()
     abortRef.current = controller
 
-    const response = await fetch(`${supabaseUrl}/functions/v1/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: supabaseAnonKey,
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        className: activeClass.name,
-        subject: (activeClass.subjects ?? []).join(', ') || activeClass.subject,
-        school_type: activeClass.school_type ?? '',
-        grade: activeClass.grade,
-        state: activeClass.state,
-        studentNames,
-        studentNotes,
-        topic: topic.trim(),
-        previousLessons,
-        curriculumUnitTitle: slot?.unit?.title ?? '',
-        curriculumUnitDescription: slot?.unit?.description ?? '',
-        ...(previousContent && refinementRequest
-          ? { previousContent, refinementRequest }
-          : {}),
-      }),
-      signal: controller.signal,
-    })
-
-    if (!response.ok) {
-      const errText = await response.text().catch(() => '')
-      throw new Error(
-        `Generierung fehlgeschlagen (${response.status})${errText ? `: ${errText}` : ''}`
-      )
-    }
+    const { response, signal } = await generateLesson({
+      className: activeClass.name,
+      subject: (activeClass.subjects ?? []).join(', ') || activeClass.subject,
+      school_type: activeClass.school_type ?? '',
+      grade: activeClass.grade,
+      state: activeClass.state,
+      studentNames,
+      studentNotes,
+      topic: topic.trim(),
+      previousLessons,
+      curriculumUnitTitle: slot?.unit?.title ?? '',
+      curriculumUnitDescription: slot?.unit?.description ?? '',
+      ...(previousContent && refinementRequest
+        ? { previousContent, refinementRequest }
+        : {}),
+    }, controller.signal)
 
     return { response, signal: controller.signal }
   }
@@ -412,47 +386,19 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     if (!activeClass || !slot) return
     setTopicSuggesting(true)
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const accessToken = sessionData?.session?.access_token
-      if (!accessToken) throw new Error('Nicht eingeloggt.')
-
       // Letzte 5 Stunden für Kontext
-      const { data: prevLessons } = await supabase
-        .from('lessons')
-        .select('title, generated_at')
-        .eq('class_id', activeClass.id)
-        .order('generated_at', { ascending: false })
-        .limit(5)
+      const { data: prevLessons } = await getLessons(activeClass.id, 5)
       const previousLessons = (prevLessons ?? []).map((l) => l.title).filter(Boolean)
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: supabaseAnonKey,
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          suggestionOnly: true,
-          slotIndex: slot.slotIndex,
-          curriculumUnitTitle: slot.unit.title,
-          curriculumUnitDescription: slot.unit.description ?? '',
-          estimatedHours: slot.unit.estimated_hours,
-          previousLessons,
-        }),
+      const result = await generateLesson({
+        suggestionOnly: true,
+        slotIndex: slot.slotIndex,
+        curriculumUnitTitle: slot.unit.title,
+        curriculumUnitDescription: slot.unit.description ?? '',
+        estimatedHours: slot.unit.estimated_hours,
+        previousLessons,
       })
 
-      if (!response.ok) {
-        const errText = await response.text().catch(() => '')
-        throw new Error(
-          `Vorschlag fehlgeschlagen (${response.status})${errText ? `: ${errText}` : ''}`
-        )
-      }
-
-      const result = await response.json()
       if (result.suggestions && Array.isArray(result.suggestions)) {
         setAiSuggestions(result.suggestions)
       }
@@ -680,18 +626,14 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     if (!content.trim() || !activeClass || !slot) return
     setSaving(true); setSaveError(null); setSaveSuccess(null)
 
-    const { data: lesson, error: insErr } = await supabase
-      .from('lessons')
-      .upsert({
-        ...(savedLessonId ? { id: savedLessonId } : {}),
-        class_id: activeClass.id,
-        curriculum_unit_id: slot.unit.id,
-        position: slot.slotIndex + 1,
-        title: topic.trim() || `Stunde ${slot.slotIndex + 1}`,
-        content: content.trim(),
-      }, { onConflict: 'id' })
-      .select()
-      .single()
+    const { data: lesson, error: insErr } = await upsertLesson({
+      ...(savedLessonId ? { id: savedLessonId } : {}),
+      class_id: activeClass.id,
+      curriculum_unit_id: slot.unit.id,
+      position: slot.slotIndex + 1,
+      title: topic.trim() || `Stunde ${slot.slotIndex + 1}`,
+      content: content.trim(),
+    })
 
      setSaving(false)
      if (insErr) { setSaveError(insErr.message); return }
@@ -714,12 +656,9 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     if (!confirmed) return
 
     console.log('Starting DELETE for id:', savedLessonId)
-    const { data, error } = await supabase
-      .from('lessons')
-      .delete()
-      .eq('id', savedLessonId)
+    const { error } = await deleteLesson(savedLessonId)
 
-    console.log('DELETE response - data:', data, 'error:', error)
+    console.log('DELETE response - error:', error)
 
     if (error) {
       console.error('Löschen fehlgeschlagen:', error)
@@ -733,41 +672,18 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     window.location.reload()
   }
 
-  async function suggestMaterials() {
+  async function handleSuggestMaterials() {
     if (!content.trim() || !activeClass) return
     setMaterialsLoading(true)
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const accessToken = sessionData?.session?.access_token
-      if (!accessToken) throw new Error('Nicht eingeloggt.')
-
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-      const response = await fetch(`${supabaseUrl}/functions/v1/suggest-materials`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: supabaseAnonKey,
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          lessonContent: content,
-          lessonTitle: topic,
-          subject: activeClass.subject,
-          grade: activeClass.grade,
-          schoolType: activeClass.school_type,
-        }),
+      const result = await suggestMaterials({
+        lessonContent: content,
+        lessonTitle: topic,
+        subject: activeClass.subject,
+        grade: activeClass.grade,
+        schoolType: activeClass.school_type,
       })
 
-      if (!response.ok) {
-        const errText = await response.text().catch(() => '')
-        throw new Error(
-          `Material-Vorschlag fehlgeschlagen (${response.status})${errText ? `: ${errText}` : ''}`
-        )
-      }
-
-      const result = await response.json()
       setMaterials(result.materials)
     } catch (err) {
       console.error('suggestMaterials error:', err)
@@ -777,41 +693,18 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     }
   }
 
-  async function suggestLearning() {
+  async function handleSuggestLearning() {
     if (!content.trim() || !activeClass) return
     setLearningLoading(true)
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const accessToken = sessionData?.session?.access_token
-      if (!accessToken) throw new Error('Nicht eingeloggt.')
-
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-      const response = await fetch(`${supabaseUrl}/functions/v1/suggest-learning`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: supabaseAnonKey,
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          lessonContent: content,
-          lessonTitle: topic,
-          subject: activeClass.subject,
-          grade: activeClass.grade,
-          schoolType: activeClass.school_type,
-        }),
+      const result = await suggestLearning({
+        lessonContent: content,
+        lessonTitle: topic,
+        subject: activeClass.subject,
+        grade: activeClass.grade,
+        schoolType: activeClass.school_type,
       })
 
-      if (!response.ok) {
-        const errText = await response.text().catch(() => '')
-        throw new Error(
-          `Fortbildungsvorschlag fehlgeschlagen (${response.status})${errText ? `: ${errText}` : ''}`
-        )
-      }
-
-      const result = await response.json()
       setLearningResources(result.resources)
     } catch (err) {
       console.error('suggestLearning error:', err)
@@ -824,15 +717,11 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   async function loadViewedResources() {
     if (!savedLessonId) return
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
+      const { data: sessionData } = await getSession()
       const userId = sessionData?.session?.user?.id
       if (!userId) return
 
-      const { data: progressData } = await supabase
-        .from('learning_progress')
-        .select('resource_title')
-        .eq('user_id', userId)
-        .eq('lesson_id', savedLessonId)
+      const { data: progressData } = await getLearningProgressByLesson(userId, savedLessonId)
 
       if (progressData) {
         const titles = new Set(progressData.map(p => p.resource_title))
@@ -846,36 +735,27 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   async function markAsViewed(resource) {
     setViewingResourceId(resource.title)
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
+      const { data: sessionData } = await getSession()
       const userId = sessionData?.session?.user?.id
       if (!userId) throw new Error('Nicht eingeloggt')
 
       // Insert in learning_progress
-      const { error: insertError } = await supabase
-        .from('learning_progress')
-        .insert({
-          user_id: userId,
-          lesson_id: savedLessonId,
-          resource_title: resource.title,
-          resource_type: resource.typ,
-          xp_earned: resource.xp,
-        })
+      const { error: insertError } = await createLearningProgress(
+        userId,
+        savedLessonId,
+        resource.title,
+        resource.typ,
+        resource.xp
+      )
 
       if (insertError) throw insertError
 
       // Update profiles
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('total_xp')
-        .eq('id', userId)
-        .single()
+      const { data: profileData } = await getProfile(userId)
 
       if (profileData) {
         const newTotal = (profileData.total_xp || 0) + resource.xp
-        await supabase
-          .from('profiles')
-          .update({ total_xp: newTotal })
-          .eq('id', userId)
+        await updateProfile(userId, { total_xp: newTotal })
       }
 
       // Mark as viewed locally
@@ -994,12 +874,12 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
            <button
              className="btn-primary"
              type="button"
-             onClick={() => {
-               if (!materials) {
-                 suggestMaterials()
-               }
-               setShowMaterialsModal(true)
-             }}
+          onClick={() => {
+                if (!materials) {
+                  handleSuggestMaterials()
+                }
+                setShowMaterialsModal(true)
+              }}
              disabled={materialsLoading}
            >
              {materialsLoading ? 'Materialien werden vorgeschlagen…' : '📚 Material'}
@@ -1009,12 +889,12 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
            <button
              className="btn-primary"
              type="button"
-             onClick={() => {
-               if (!learningResources) {
-                 suggestLearning()
-               }
-               setShowLearningModal(true)
-             }}
+          onClick={() => {
+                if (!learningResources) {
+                  handleSuggestLearning()
+                }
+                setShowLearningModal(true)
+              }}
              disabled={learningLoading}
            >
              {learningLoading ? 'Ressourcen werden vorgeschlagen…' : '🎓 Dahinter steckt…'}
@@ -1084,12 +964,12 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
              <button
                className="btn-primary"
                type="button"
-               onClick={() => {
-                 if (!materials) {
-                   suggestMaterials()
-                 }
-                 setShowMaterialsModal(true)
-               }}
+            onClick={() => {
+                  if (!materials) {
+                    handleSuggestMaterials()
+                  }
+                  setShowMaterialsModal(true)
+                }}
                disabled={materialsLoading}
              >
                {materialsLoading ? 'Materialien werden vorgeschlagen…' : '📚 Material'}

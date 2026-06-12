@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { signOut } from '../lib/auth'
 import { useClasses } from '../context/ClassesContext'
 import { SCHOOL_TYPE_SHORT } from '../lib/schoolTypes'
 import './AppLayout.css'
@@ -18,7 +18,7 @@ export default function AppLayout({ user }) {
   const navigate = useNavigate()
 
   async function handleLogout() {
-    await supabase.auth.signOut()
+    await signOut()
     navigate('/login', { replace: true })
   }
 

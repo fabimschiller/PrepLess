@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import {
+  getProfileDefaultSchoolType,
+  createClass,
+  updateClass as updateClassDb,
+  deleteClass as deleteClassDb,
+} from '../../lib/db'
+import { getUser } from '../../lib/auth'
 import { useClasses } from '../../context/ClassesContext'
 import { generateCurriculumForClass } from '../../lib/curriculum'
 import { SCHOOL_TYPES, SUBJECTS_BY_TYPE, SCHOOL_TYPE_SHORT } from '../../lib/schoolTypes'
@@ -70,14 +76,10 @@ export default function ClassesAdmin() {
   const [editValues, setEditValues] = useState({})
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
+    getUser().then(async ({ data }) => {
       setUser(data.user)
       if (!data.user) return
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('default_school_type')
-        .eq('id', data.user.id)
-        .single()
+      const { data: profile } = await getProfileDefaultSchoolType(data.user.id)
       const dst = profile?.default_school_type ?? ''
       setDefaultSchoolType(dst)
       setForm((prev) => ({ ...prev, school_type: dst }))
@@ -101,19 +103,7 @@ export default function ClassesAdmin() {
 
     if (!user) { setFormError('Kein User. Bitte neu einloggen.'); setSaving(false); return }
 
-    const { data, error: insErr } = await supabase
-      .from('classes')
-      .insert({
-        user_id: user.id,
-        name: form.name.trim(),
-        subject: form.subjects[0] ?? '',   // Rückwärtskompatibilität
-        subjects: form.subjects,
-        school_type: form.school_type,
-        grade: form.grade.trim(),
-        state: form.state,
-      })
-      .select()
-      .single()
+    const { data, error: insErr } = await createClass(user.id, form)
 
     setSaving(false)
     if (insErr) { setFormError(insErr.message); return }
@@ -149,19 +139,7 @@ export default function ClassesAdmin() {
 
   async function saveEdit() {
     if (!editValues.school_type) { alert('Bitte Schultyp wählen.'); return }
-    const { data, error: updErr } = await supabase
-      .from('classes')
-      .update({
-        name: editValues.name.trim(),
-        subject: editValues.subjects[0] ?? editValues.name,
-        subjects: editValues.subjects,
-        school_type: editValues.school_type,
-        grade: editValues.grade.trim(),
-        state: editValues.state,
-      })
-      .eq('id', editId)
-      .select()
-      .single()
+    const { data, error: updErr } = await updateClassDb(editId, editValues)
     if (updErr) { alert(updErr.message); return }
     updateClass(data)
     cancelEdit()
@@ -169,7 +147,7 @@ export default function ClassesAdmin() {
 
   async function deleteClass(cls) {
     if (!confirm(`Klasse "${cls.name}" wirklich löschen?`)) return
-    const { error: delErr } = await supabase.from('classes').delete().eq('id', cls.id)
+    const { error: delErr } = await deleteClassDb(cls.id)
     if (delErr) { alert(delErr.message); return }
     removeClass(cls.id)
     if (activeClassId === cls.id) setActiveClassId(null)

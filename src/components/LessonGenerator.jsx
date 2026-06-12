@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { getSession } from '../lib/auth'
+import { getStudentsByClass, getObservationsByStudentIds, createObservations, getLessons } from '../lib/db'
+import { generateLesson } from '../lib/api'
 import './LessonGenerator.css'
 
 export default function LessonGenerator({
@@ -34,11 +36,7 @@ export default function LessonGenerator({
 
     let cancelled = false
     ;(async () => {
-      const { data: studentsData } = await supabase
-        .from('students')
-        .select('id, class_id, name, notes')
-        .eq('class_id', activeClass.id)
-        .order('created_at', { ascending: true })
+      const { data: studentsData } = await getStudentsByClass(activeClass.id, 'created_at')
 
       if (cancelled) return
       const list = studentsData ?? []
@@ -49,11 +47,7 @@ export default function LessonGenerator({
         return
       }
       const ids = list.map((s) => s.id)
-      const { data: obs } = await supabase
-        .from('observations')
-        .select('student_id, note, created_at')
-        .in('student_id', ids)
-        .order('created_at', { ascending: false })
+      const { data: obs } = await getObservationsByStudentIds(ids)
 
       if (cancelled) return
       const latestByStudentId = {}
@@ -119,30 +113,24 @@ export default function LessonGenerator({
     }
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const accessToken = sessionData?.session?.access_token
-      if (!accessToken) throw new Error('Nicht eingeloggt.')
-
-      const { data: prevLessons } = await supabase
-        .from('lessons')
-        .select('title, generated_at')
-        .eq('class_id', activeClass.id)
-        .order('generated_at', { ascending: false })
-        .limit(5)
+      const { data: prevLessons } = await getLessons(activeClass.id, 5)
       const previousLessons = (prevLessons ?? [])
         .map((l) => l.title)
         .filter(Boolean)
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+      const controller = new AbortController()
 
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: supabaseAnonKey,
-          Authorization: `Bearer ${accessToken}`,
+      const { response } = await generateLesson(
+        {
+          className: activeClass.name,
+          subject: activeClass.subject,
+          grade: activeClass.grade,
+          state: activeClass.state,
+          topic: topic.trim(),
+          previousLessons,
         },
+        controller.signal
+      )
         body: JSON.stringify({
           className: activeClass.name,
           subject: activeClass.subject,

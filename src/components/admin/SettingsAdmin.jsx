@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import {
+  getProfileDefaultSchoolType,
+  upsertProfile,
+} from '../../lib/db'
+import { getUser } from '../../lib/auth'
 import { SCHOOL_TYPES } from '../../lib/schoolTypes'
 import './AdminTables.css'
 
@@ -12,14 +16,10 @@ export default function SettingsAdmin() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
+    getUser().then(async ({ data }) => {
       if (!data.user) { setLoading(false); return }
       setUserId(data.user.id)
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('default_school_type')
-        .eq('id', data.user.id)
-        .single()
+      const { data: profile } = await getProfileDefaultSchoolType(data.user.id)
       setDefaultSchoolType(profile?.default_school_type ?? '')
       setLoading(false)
     })
@@ -30,9 +30,10 @@ export default function SettingsAdmin() {
     if (!userId) return
     setSaving(true); setError(null); setSuccess(null)
 
-    const { error: upsertErr } = await supabase
-      .from('profiles')
-      .upsert({ id: userId, default_school_type: defaultSchoolType }, { onConflict: 'id' })
+    const { error: upsertErr } = await upsertProfile({ 
+      id: userId, 
+      default_school_type: defaultSchoolType 
+    })
 
     setSaving(false)
     if (upsertErr) { setError(upsertErr.message); return }

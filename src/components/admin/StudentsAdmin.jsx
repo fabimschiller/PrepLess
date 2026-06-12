@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import {
+  getStudents as getStudentsDb,
+  createStudent,
+  updateStudent,
+  deleteStudent as deleteStudentDb,
+} from '../../lib/db'
 import { useClasses } from '../../context/ClassesContext'
 import './AdminTables.css'
 
@@ -23,11 +28,7 @@ export default function StudentsAdmin() {
     }
     setLoading(true)
     setError(null)
-    const { data, error: err } = await supabase
-      .from('students')
-      .select('id, class_id, name, notes, created_at')
-      .eq('class_id', activeClass.id)
-      .order('name', { ascending: true })
+    const { data, error: err } = await getStudentsDb(activeClass.id)
     if (err) {
       setError(err.message)
       setStudents([])
@@ -49,15 +50,7 @@ export default function StudentsAdmin() {
 
     setAdding(true)
     setError(null)
-    const { data, error: insErr } = await supabase
-      .from('students')
-      .insert({
-        class_id: activeClass.id,
-        name,
-        notes: newNotes.trim() || null,
-      })
-      .select()
-      .single()
+    const { data, error: insErr } = await createStudent(activeClass.id, name, newNotes)
     setAdding(false)
     if (insErr) {
       setError(insErr.message)
@@ -81,15 +74,7 @@ export default function StudentsAdmin() {
   }
 
   async function saveEdit() {
-    const { data, error: updErr } = await supabase
-      .from('students')
-      .update({
-        name: editValues.name.trim(),
-        notes: editValues.notes.trim() || null,
-      })
-      .eq('id', editId)
-      .select()
-      .single()
+    const { data, error: updErr } = await updateStudent(editId, editValues.name, editValues.notes)
     if (updErr) {
       alert(updErr.message)
       return
@@ -104,10 +89,7 @@ export default function StudentsAdmin() {
 
   async function deleteStudent(s) {
     if (!confirm(`Schüler "${s.name}" wirklich löschen?`)) return
-    const { error: delErr } = await supabase
-      .from('students')
-      .delete()
-      .eq('id', s.id)
+    const { error: delErr } = await deleteStudentDb(s.id)
     if (delErr) {
       alert(delErr.message)
       return

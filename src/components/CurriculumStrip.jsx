@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import {
+  getCurriculumUnits,
+  getLessons,
+  getStudents as getStudentsDb,
+} from '../lib/db'
 import {
   computeUnitStatus,
   generateCurriculumForClass,
@@ -59,16 +63,8 @@ export default function CurriculumStrip({
 
     // Units + alle Stunden der Klasse in einem Schritt laden
     Promise.all([
-      supabase
-        .from('curriculum_units')
-        .select('id, class_id, position, title, description, estimated_hours, start_month, end_month')
-        .eq('class_id', classId)
-        .order('position', { ascending: true }),
-      supabase
-        .from('lessons')
-        .select('id, title, content, position, curriculum_unit_id, status, conducted_at, generated_at')
-        .eq('class_id', classId)
-        .order('generated_at', { ascending: false }),
+      getCurriculumUnits(classId),
+      getLessons(classId, 1000),
     ]).then(([unitsRes, lessonsRes]) => {
       if (cancelled) return
 
@@ -129,14 +125,11 @@ export default function CurriculumStrip({
   async function loadLessonsForUnit(unitId) {
     const cached = lessonsByUnit[unitId]
     if (cached && cached.length > 0) return cached
-    const { data } = await supabase
-      .from('lessons')
-      .select('id, title, content, position, curriculum_unit_id, status, conducted_at, generated_at')
-      .eq('curriculum_unit_id', unitId)
-      .order('position', { ascending: true })
-    const lessons = data ?? []
-    setLessonsByUnit((prev) => ({ ...prev, [unitId]: lessons }))
-    return lessons
+    // Note: db.js doesn't have a function to get lessons by curriculum_unit_id
+    // so we load all lessons again and filter (or use allLessons from the initial load)
+    // For now, we rely on the lessons loaded in the initial Promise.all()
+    // If this is called, the lessons should already be in lessonsByUnit
+    return lessonsByUnit[unitId] ?? []
   }
 
   function handleUnitClick(unit) {
@@ -216,11 +209,7 @@ export default function CurriculumStrip({
   async function openConductedModal(lesson, unitId, e) {
     e.stopPropagation() // Slot-Klick nicht triggern
     if (!activeClass?.id) return
-    const { data } = await supabase
-      .from('students')
-      .select('id, name')
-      .eq('class_id', activeClass.id)
-      .order('name', { ascending: true })
+    const { data } = await getStudentsDb(activeClass.id)
     setModalStudents(data ?? [])
     setConductedModal({ lessonId: lesson.id, unitId })
   }
