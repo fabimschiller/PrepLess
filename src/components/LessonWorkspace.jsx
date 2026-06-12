@@ -793,14 +793,10 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       ? partialLesson 
       : parsedLesson
 
-    console.log('[LessonWorkspace Render]', {
-      savedLessonId,
-      isStreaming,
-      hasContent: content.length > 0,
-      hasPartialLesson: Object.keys(partialLesson).length > 0,
-      partialLessonKeys: Object.keys(partialLesson),
+    console.log('🔥 RENDER v2', {
       hasParsedLesson: parsedLesson !== null,
       parsedLessonTitel: parsedLesson?.titel,
+      hasPartialLesson: Object.keys(partialLesson).length > 0,
     })
 
   return (
