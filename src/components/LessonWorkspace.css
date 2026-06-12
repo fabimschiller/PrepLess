@@ -75,6 +75,12 @@
   font-weight: 500;
 }
 
+.workspace-save-status {
+  font-size: 13.5px;
+  color: var(--info, #0066cc);
+  font-weight: 500;
+}
+
 .btn-delete-text {
   font-size: 13.5px;
   color: #888;

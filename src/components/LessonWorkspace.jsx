@@ -179,6 +179,9 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [saveSuccess, setSaveSuccess] = useState(null)
+  const [autoSaving, setAutoSaving] = useState(false)
+  const [autoSaveError, setAutoSaveError] = useState(null)
+  const [wasAutoSaved, setWasAutoSaved] = useState(false)
   const [refinement, setRefinement] = useState('')
   const [refining, setRefining] = useState(false)
   const [topicSuggesting, setTopicSuggesting] = useState(false)
@@ -435,54 +438,63 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
         setPartialLesson(partial)
       }, signal)
 
-      // Nach Ende des Streams: vollständiges JSON parsen
-      try {
-        const parsed = JSON.parse(acc)
-        if (parsed && typeof parsed === 'object' && parsed.titel) {
-          setParsedLesson(parsed)
-          setPartialLesson(parsed)
-          return
-        }
-      } catch (e) {
-        console.log('Full JSON parse failed')
-      }
+       // Nach Ende des Streams: vollständiges JSON parsen
+       try {
+         const parsed = JSON.parse(acc)
+         if (parsed && typeof parsed === 'object' && parsed.titel) {
+           setParsedLesson(parsed)
+           setPartialLesson(parsed)
+           // Auto-Save nach erfolgreicher Generation
+           console.log('Stream erfolgreich, starte Auto-Save...')
+           await handleAutoSave()
+           return
+         }
+       } catch (e) {
+         console.log('Full JSON parse failed')
+       }
 
-      // Fallback: Markdown-Extraktion
-      try {
-        const match = acc.match(/```(?:json)?\s*([\s\S]*?)```/)
-        if (match) {
-          const parsed = JSON.parse(match[1].trim())
-          if (parsed && typeof parsed === 'object' && parsed.titel) {
-            setParsedLesson(parsed)
-            setPartialLesson(parsed)
-            return
-          }
-        }
-      } catch (e) {
-        console.log('Markdown parse failed')
-      }
+       // Fallback: Markdown-Extraktion
+       try {
+         const match = acc.match(/```(?:json)?\s*([\s\S]*?)```/)
+         if (match) {
+           const parsed = JSON.parse(match[1].trim())
+           if (parsed && typeof parsed === 'object' && parsed.titel) {
+             setParsedLesson(parsed)
+             setPartialLesson(parsed)
+             // Auto-Save nach erfolgreicher Generation
+             console.log('Markdown-Parse erfolgreich, starte Auto-Save...')
+             await handleAutoSave()
+             return
+           }
+         }
+       } catch (e) {
+         console.log('Markdown parse failed')
+       }
 
-      // Fallback: Objekt-Extraktion
-      try {
-        const firstBrace = acc.indexOf('{')
-        const lastBrace = acc.lastIndexOf('}')
-        if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
-          const jsonStr = acc.substring(firstBrace, lastBrace + 1)
-          const parsed = JSON.parse(jsonStr)
-          if (parsed && typeof parsed === 'object' && parsed.titel) {
-            setParsedLesson(parsed)
-            setPartialLesson(parsed)
-            return
-          }
-        }
-      } catch (e) {
-        console.log('Object extract failed')
-      }
-    } catch (err) {
-      if (err.name !== 'AbortError') setGenError(err.message ?? String(err))
-    } finally {
-      setGenerating(false)
-    }
+       // Fallback: Objekt-Extraktion
+       try {
+         const firstBrace = acc.indexOf('{')
+         const lastBrace = acc.lastIndexOf('}')
+         if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
+           const jsonStr = acc.substring(firstBrace, lastBrace + 1)
+           const parsed = JSON.parse(jsonStr)
+           if (parsed && typeof parsed === 'object' && parsed.titel) {
+             setParsedLesson(parsed)
+             setPartialLesson(parsed)
+             // Auto-Save nach erfolgreicher Generation
+             console.log('Objekt-Extraktion erfolgreich, starte Auto-Save...')
+             await handleAutoSave()
+             return
+           }
+         }
+       } catch (e) {
+         console.log('Object extract failed')
+       }
+     } catch (err) {
+       if (err.name !== 'AbortError') setGenError(err.message ?? String(err))
+     } finally {
+       setGenerating(false)
+     }
   }
 
   async function handleRefine() {
@@ -650,8 +662,38 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
      onLessonSaved?.(lesson)
   }
 
-  async function handleDelete() {
-    console.log('handleDelete called, savedLessonId:', savedLessonId)
+   async function handleAutoSave() {
+     if (!content.trim() || !activeClass || !slot) return
+     setAutoSaving(true); setAutoSaveError(null)
+
+     const { data: lesson, error: insErr } = await upsertLesson({
+       ...(savedLessonId ? { id: savedLessonId } : {}),
+       class_id: activeClass.id,
+       curriculum_unit_id: slot.unit.id,
+       position: slot.slotIndex + 1,
+       title: topic.trim() || `Stunde ${slot.slotIndex + 1}`,
+       content: content.trim(),
+     })
+
+      setAutoSaving(false)
+      if (insErr) { 
+        setAutoSaveError(insErr.message)
+        console.error('Auto-Save fehlgeschlagen:', insErr.message)
+        return 
+      }
+      
+      console.log('Auto-Save erfolgreich:', lesson.id)
+      setSavedLessonId(lesson.id)
+      setLessonStatus(lesson.status ?? 'planned')
+      setWasAutoSaved(true)
+      onLessonSaved?.(lesson)
+      
+      // Erfolgs-Meldung nach 3 Sekunden ausblenden
+      setTimeout(() => setWasAutoSaved(false), 3000)
+   }
+
+   async function handleDelete() {
+     console.log('handleDelete called, savedLessonId:', savedLessonId)
     if (!savedLessonId) {
       console.log('savedLessonId is null/undefined, returning')
       return
@@ -944,18 +986,27 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
          </div>
        )}
 
-       {hasContent && !isStreaming && (
-         <div className="workspace-save-row">
-           <button
-             className="btn-primary"
-             type="button"
-             onClick={handleSave}
-             disabled={saving}
-           >
-             {saving ? 'Speichert…' : '💾 Stunde speichern'}
-           </button>
-           {saveError && <span className="workspace-save-error">{saveError}</span>}
-           {saveSuccess && <span className="workspace-save-ok">{saveSuccess}</span>}
+        {hasContent && !isStreaming && (
+          <div className="workspace-save-row">
+            {/* Speichern-Button: nach Auto-Save versteckt, nach Refinement wieder sichtbar */}
+            {(!wasAutoSaved || refining) && (
+              <button
+                className="btn-primary"
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? 'Speichert…' : refining ? '💾 Verfeinerte Version speichern' : '💾 Stunde speichern'}
+              </button>
+            )}
+            
+            {/* Auto-Save Status */}
+            {autoSaving && <span className="workspace-save-status">Wird automatisch gespeichert…</span>}
+            {wasAutoSaved && !refining && <span className="workspace-save-ok">✓ Automatisch gespeichert</span>}
+            {autoSaveError && <span className="workspace-save-error">{autoSaveError}</span>}
+            
+            {saveError && <span className="workspace-save-error">{saveError}</span>}
+            {saveSuccess && <span className="workspace-save-ok">{saveSuccess}</span>}
            {savedLessonId && (
              <button
                className="btn-delete-text"
