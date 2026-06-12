@@ -465,57 +465,57 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       }, signal)
 
        // Nach Ende des Streams: vollständiges JSON parsen
-       try {
-         const parsed = JSON.parse(acc)
-         if (parsed && typeof parsed === 'object' && parsed.titel) {
-           setParsedLesson(parsed)
-           setPartialLesson(parsed)
-           // Auto-Save nach erfolgreicher Generation
-           console.log('Stream erfolgreich, starte Auto-Save...')
-           await handleAutoSave()
-           return
-         }
-       } catch (e) {
-         console.log('Full JSON parse failed')
-       }
+        try {
+          const parsed = JSON.parse(acc)
+          if (parsed && typeof parsed === 'object' && parsed.titel) {
+            setParsedLesson(parsed)
+            setPartialLesson(parsed)
+            // Auto-Save nach erfolgreicher Generation
+            console.log('Stream erfolgreich, starte Auto-Save...')
+            await handleAutoSave(acc)
+            return
+          }
+        } catch (e) {
+          console.log('Full JSON parse failed')
+        }
 
-       // Fallback: Markdown-Extraktion
-       try {
-         const match = acc.match(/```(?:json)?\s*([\s\S]*?)```/)
-         if (match) {
-           const parsed = JSON.parse(match[1].trim())
-           if (parsed && typeof parsed === 'object' && parsed.titel) {
-             setParsedLesson(parsed)
-             setPartialLesson(parsed)
-             // Auto-Save nach erfolgreicher Generation
-             console.log('Markdown-Parse erfolgreich, starte Auto-Save...')
-             await handleAutoSave()
-             return
-           }
-         }
-       } catch (e) {
-         console.log('Markdown parse failed')
-       }
+        // Fallback: Markdown-Extraktion
+        try {
+          const match = acc.match(/```(?:json)?\s*([\s\S]*?)```/)
+          if (match) {
+            const parsed = JSON.parse(match[1].trim())
+            if (parsed && typeof parsed === 'object' && parsed.titel) {
+              setParsedLesson(parsed)
+              setPartialLesson(parsed)
+              // Auto-Save nach erfolgreicher Generation
+              console.log('Markdown-Parse erfolgreich, starte Auto-Save...')
+              await handleAutoSave(acc)
+              return
+            }
+          }
+        } catch (e) {
+          console.log('Markdown parse failed')
+        }
 
-       // Fallback: Objekt-Extraktion
-       try {
-         const firstBrace = acc.indexOf('{')
-         const lastBrace = acc.lastIndexOf('}')
-         if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
-           const jsonStr = acc.substring(firstBrace, lastBrace + 1)
-           const parsed = JSON.parse(jsonStr)
-           if (parsed && typeof parsed === 'object' && parsed.titel) {
-             setParsedLesson(parsed)
-             setPartialLesson(parsed)
-             // Auto-Save nach erfolgreicher Generation
-             console.log('Objekt-Extraktion erfolgreich, starte Auto-Save...')
-             await handleAutoSave()
-             return
-           }
-         }
-       } catch (e) {
-         console.log('Object extract failed')
-       }
+        // Fallback: Objekt-Extraktion
+        try {
+          const firstBrace = acc.indexOf('{')
+          const lastBrace = acc.lastIndexOf('}')
+          if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
+            const jsonStr = acc.substring(firstBrace, lastBrace + 1)
+            const parsed = JSON.parse(jsonStr)
+            if (parsed && typeof parsed === 'object' && parsed.titel) {
+              setParsedLesson(parsed)
+              setPartialLesson(parsed)
+              // Auto-Save nach erfolgreicher Generation
+              console.log('Objekt-Extraktion erfolgreich, starte Auto-Save...')
+              await handleAutoSave(acc)
+              return
+            }
+          }
+        } catch (e) {
+          console.log('Object extract failed')
+        }
      } catch (err) {
        if (err.name !== 'AbortError') setGenError(err.message ?? String(err))
      } finally {
@@ -692,18 +692,25 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       onLessonSaved?.(lesson)
   }
 
-   async function handleAutoSave() {
-     if (!content.trim() || !activeClass || !slot) return
-     setAutoSaving(true); setAutoSaveError(null)
+    async function handleAutoSave(contentToSave) {
+      console.log('🔄 Auto-Save start', { hasContent: !!contentToSave, activeClass: !!activeClass, slot: !!slot })
+      
+      // Nutze den übergebenen contentToSave oder den State-Wert
+      const saveContent = contentToSave ?? content
+      if (!saveContent.trim() || !activeClass || !slot) {
+        console.log('🔄 Auto-Save early return - missing data')
+        return
+      }
+      setAutoSaving(true); setAutoSaveError(null)
 
-     const { data: lesson, error: insErr } = await upsertLesson({
-       ...(savedLessonId ? { id: savedLessonId } : {}),
-       class_id: activeClass.id,
-       curriculum_unit_id: slot.unit.id,
-       position: slot.slotIndex + 1,
-       title: topic.trim() || `Stunde ${slot.slotIndex + 1}`,
-       content: content.trim(),
-     })
+      const { data: lesson, error: insErr } = await upsertLesson({
+        ...(savedLessonId ? { id: savedLessonId } : {}),
+        class_id: activeClass.id,
+        curriculum_unit_id: slot.unit.id,
+        position: slot.slotIndex + 1,
+        title: topic.trim() || `Stunde ${slot.slotIndex + 1}`,
+        content: saveContent.trim(),
+      })
 
       setAutoSaving(false)
       if (insErr) { 
