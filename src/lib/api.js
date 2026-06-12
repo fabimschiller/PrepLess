@@ -163,6 +163,8 @@ export async function suggestTopic(payload) {
     throw new Error('Nicht eingeloggt.')
   }
 
+  console.log('suggestTopic (api.js): calling generate edge function with payload:', payload)
+  
   const response = await fetch(`${SUPABASE_URL}/functions/v1/generate`, {
     method: 'POST',
     headers: {
@@ -180,5 +182,7 @@ export async function suggestTopic(payload) {
     )
   }
 
-  return await response.json()
+  const result = await response.json()
+  console.log('suggestTopic (api.js): got result:', result)
+  return result
 }
