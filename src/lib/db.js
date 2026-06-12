@@ -120,12 +120,14 @@ export async function deleteStudent(studentId) {
 
 // ─── LESSONS ───────────────────────────────────────────────────────────
 export async function getLessons(classId, limit = 5) {
-  return await supabase
+  const result = await supabase
     .from('lessons')
-    .select('title, generated_at')
+    .select('id, title, curriculum_unit_id, position, status, conducted_at, content, kurzfassung, generated_at, created_at')
     .eq('class_id', classId)
     .order('generated_at', { ascending: false })
     .limit(limit)
+  console.log('getLessons result:', result.data, result.error)
+  return result
 }
 
 export async function getLesson(lessonId) {
