@@ -1,11 +1,9 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { signOut } from '../lib/auth'
-import { getUser } from '../lib/auth'
+import { signOut, getUser } from '../lib/auth'
 import { createClass } from '../lib/db'
 import { useClasses } from '../context/ClassesContext'
-import { generateCurriculumForClass } from '../lib/curriculum'
-import { SCHOOL_TYPE_SHORT, SCHOOL_TYPES, SUBJECTS_BY_TYPE } from '../lib/schoolTypes'
+import { SCHOOL_TYPE_SHORT, SCHOOL_TYPES } from '../lib/schoolTypes'
 import './AppLayout.css'
 
 const NAV_ITEMS = [
@@ -17,29 +15,6 @@ const NAV_ITEMS = [
 const DOT_COLORS = ['#aa3bff', '#2563eb', '#16a34a', '#d99b1f', '#d12d2d']
 
 const emptyForm = { name: '', school_type: '', subjects: [], grade: '', state: 'Bayern' }
-
-function SubjectCheckboxes({ schoolType, selected, onChange }) {
-  const available = SUBJECTS_BY_TYPE[schoolType] ?? []
-  if (!schoolType || available.length === 0)
-    return <p className="sidebar-empty">Erst Schultyp wählen.</p>
-  return (
-    <div className="subject-checkboxes-mini">
-      {available.map((s) => (
-        <label key={s} className="subject-checkbox-label-mini">
-          <input
-            type="checkbox"
-            checked={selected.includes(s)}
-            onChange={(e) => {
-              if (e.target.checked) onChange([...selected, s])
-              else onChange(selected.filter((x) => x !== s))
-            }}
-          />
-          {s}
-        </label>
-      ))}
-    </div>
-  )
-}
 
 export default function AppLayout({ user }) {
   const { classes, activeClassId, setActiveClassId, loading, addClass } = useClasses()
@@ -66,7 +41,6 @@ export default function AppLayout({ user }) {
   async function handleCreate(e) {
     e.preventDefault()
     if (!form.school_type) { setFormError('Schultyp wählen.'); return }
-    if (form.subjects.length === 0) { setFormError('Mind. ein Fach wählen.'); return }
     setSaving(true); setFormError(null)
 
     const { data: userData } = await getUser()
@@ -80,9 +54,6 @@ export default function AppLayout({ user }) {
     setForm(emptyForm)
     setShowAddForm(false)
     setSaving(false)
-
-    // Lehrplan im Hintergrund generieren
-    generateCurriculumForClass(data).catch(() => {})
   }
 
   return (
@@ -186,16 +157,6 @@ export default function AppLayout({ user }) {
                   required
                 />
               </div>
-              {form.school_type && (
-                <div className="field">
-                  <div className="sidebar-section-title" style={{ marginBottom: 4 }}>Fächer</div>
-                  <SubjectCheckboxes
-                    schoolType={form.school_type}
-                    selected={form.subjects}
-                    onChange={(val) => updateField('subjects', val)}
-                  />
-                </div>
-              )}
               {formError && (
                 <p style={{ color: 'var(--error, #d12d2d)', fontSize: 12, margin: '4px 0' }}>
                   {formError}

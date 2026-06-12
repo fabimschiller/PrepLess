@@ -4,6 +4,7 @@ import {
   updateCurriculumUnit,
   deleteCurriculumUnit,
   deleteCurriculumUnitsBySubject,
+  updateClass,
 } from '../../lib/db'
 import { useClasses } from '../../context/ClassesContext'
 import {
@@ -11,6 +12,7 @@ import {
   monthLabel,
 } from '../../lib/curriculum'
 import { importCurriculum } from '../../lib/api'
+import { SUBJECTS_BY_TYPE } from '../../lib/schoolTypes'
 import './AdminTables.css'
 
 const MONTH_OPTIONS = Array.from({ length: 10 }, (_, i) => ({
@@ -300,7 +302,12 @@ function SubjectCurriculumSection({ cls, subject }) {
 // ─── Haupt-Export ─────────────────────────────────────────────────────────────
 
 export default function CurriculumAdmin() {
-  const { activeClass } = useClasses()
+  const { activeClass, updateClass: updateClassInContext } = useClasses()
+
+  const [showAddSubject, setShowAddSubject] = useState(false)
+  const [newSubject, setNewSubject] = useState('')
+  const [addingSubject, setAddingSubject] = useState(false)
+  const [addSubjectError, setAddSubjectError] = useState(null)
 
   if (!activeClass) {
     return (
@@ -316,12 +323,27 @@ export default function CurriculumAdmin() {
     ? [activeClass.subject]
     : []
 
-  if (subjects.length === 0) {
-    return (
-      <div className="card">
-        <p className="empty-state">Diese Klasse hat keine Fächer zugewiesen.</p>
-      </div>
-    )
+  // Verfügbare Fächer die noch nicht hinzugefügt wurden
+  const availableSubjects = (SUBJECTS_BY_TYPE[activeClass.school_type] ?? [])
+    .filter((s) => !subjects.includes(s))
+
+  async function handleAddSubject(e) {
+    e.preventDefault()
+    if (!newSubject) return
+    setAddingSubject(true); setAddSubjectError(null)
+    const updatedSubjects = [...subjects, newSubject]
+    const { data, error } = await updateClass(activeClass.id, {
+      name: activeClass.name,
+      school_type: activeClass.school_type,
+      subjects: updatedSubjects,
+      grade: activeClass.grade,
+      state: activeClass.state,
+    })
+    if (error) { setAddSubjectError(error.message); setAddingSubject(false); return }
+    updateClassInContext(data)
+    setNewSubject('')
+    setShowAddSubject(false)
+    setAddingSubject(false)
   }
 
   return (
@@ -333,6 +355,55 @@ export default function CurriculumAdmin() {
           subject={subject}
         />
       ))}
+
+      {/* Fach hinzufügen */}
+      {!showAddSubject ? (
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={() => { setShowAddSubject(true); setAddSubjectError(null) }}
+        >
+          + Fach anlegen
+        </button>
+      ) : (
+        <section className="card">
+          <h2>Fach anlegen</h2>
+          <form onSubmit={handleAddSubject} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            {availableSubjects.length > 0 ? (
+              <select
+                value={newSubject}
+                onChange={(e) => setNewSubject(e.target.value)}
+                required
+                style={{ minWidth: 200 }}
+              >
+                <option value="">Fach wählen…</option>
+                {availableSubjects.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            ) : (
+              <p className="empty-state" style={{ margin: 0 }}>
+                Alle Fächer für diesen Schultyp bereits angelegt.
+              </p>
+            )}
+            <div style={{ display: 'flex', gap: 8 }}>
+              {availableSubjects.length > 0 && (
+                <button type="submit" className="btn-primary" disabled={addingSubject || !newSubject}>
+                  {addingSubject ? 'Wird hinzugefügt…' : 'Hinzufügen'}
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => { setShowAddSubject(false); setNewSubject(''); setAddSubjectError(null) }}
+              >
+                Abbrechen
+              </button>
+            </div>
+            {addSubjectError && <div className="alert error" style={{ width: '100%' }}>{addSubjectError}</div>}
+          </form>
+        </section>
+      )}
     </div>
   )
 }
