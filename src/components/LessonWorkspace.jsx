@@ -26,6 +26,7 @@ import './LessonWorkspace.css'
 // ─── Haupt-Komponente ─────────────────────────────────────────────────────────
 export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   const [topic, setTopic] = useState('')
+  const [content, setContent] = useState('')
   const [students, setStudents] = useState([])
   const [topicSuggestions, setTopicSuggestions] = useState([])
   const [materials, setMaterials] = useState(null)
@@ -48,7 +49,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   } = useLessonSave({ activeClass, slot, topic, content, onLessonSaved })
 
   const {
-    content, setContent,
     parsedLesson, setParsedLesson,
     partialLesson,
     generating,
@@ -63,7 +63,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     suggestTopic,
     resetStream,
     parseLessonContent,
-  } = useLessonStream({ activeClass, slot, topic, students, handleAutoSave, setHasUnsavedRefinement, resetSave })
+  } = useLessonStream({ activeClass, slot, topic, students, content, setContent, handleAutoSave, setHasUnsavedRefinement, resetSave })
 
   // Modal-Close: Escape-Taste
   useEffect(() => {

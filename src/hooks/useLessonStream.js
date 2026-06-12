@@ -143,11 +143,12 @@ export function useLessonStream({
   slot,
   topic,
   students,
+  content,
+  setContent,
   handleAutoSave,
   setHasUnsavedRefinement,
   resetSave,
 }) {
-  const [content, setContent] = useState('')
   const [parsedLesson, setParsedLesson] = useState(null)
   const [partialLesson, setPartialLesson] = useState({})
 
@@ -311,14 +312,13 @@ export function useLessonStream({
     setRefinement('')
     setTopicSuggesting(false)
     setAiSuggestions([])
-    setContent('')
+    setContent('')     // setContent kommt als Parameter rein
     setParsedLesson(null)
     setPartialLesson({})
   }
 
   return {
-    // State
-    content, setContent,
+    // State (content/setContent bleiben in LessonWorkspace)
     parsedLesson, setParsedLesson,
     partialLesson, setPartialLesson,
     generating,
