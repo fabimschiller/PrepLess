@@ -314,6 +314,12 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
 
   // Slot wechselt: Felder zurücksetzen / vorbelegen
   useEffect(() => {
+    console.log('🎯 Slot useEffect fired', {
+      slotExists: !!slot,
+      hasLesson: !!slot?.lesson,
+      lessonId: slot?.lesson?.id
+    })
+
     abortRef.current?.abort()
     setGenerating(false)
     setRefining(false)
@@ -344,10 +350,11 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       setSavedLessonId(null)
       setLessonStatus(null)
       setParsedLesson(null)
-       // Starte Themenvorschlag für leeren Slot
-       suggestTopic()
-     }
-   }, [slot]) // eslint-disable-line
+      // Leerer Slot → suggestTopic aufrufen
+      console.log('🎯 Calling suggestTopic for empty slot')
+      suggestTopic()
+    }
+  }, [slot]) // eslint-disable-line
 
   async function callGenerateStream({ previousContent, refinementRequest } = {}) {
     if (!activeClass) return
