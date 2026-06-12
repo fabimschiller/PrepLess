@@ -21,7 +21,7 @@ import {
   updateProfile,
 } from '../lib/db'
 import { getSession } from '../lib/auth'
-import { generateLesson, suggestMaterials, suggestLearning } from '../lib/api'
+import { generateLesson, suggestMaterials, suggestLearning, suggestTopic as suggestTopicAPI } from '../lib/api'
 import LessonRenderer from './LessonRenderer'
 import './LessonWorkspace.css'
 
@@ -420,8 +420,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       const { data: prevLessons } = await getLessons(activeClass.id, 5)
       const previousLessons = (prevLessons ?? []).map((l) => l.title).filter(Boolean)
 
-      console.log('suggestTopic: calling generateLesson API')
-      const result = await generateLesson({
+      console.log('suggestTopic: calling suggestTopicAPI from lib/api')
+      const result = await suggestTopicAPI({
         suggestionOnly: true,
         slotIndex: slot.slotIndex,
         curriculumUnitTitle: slot.unit.title,
