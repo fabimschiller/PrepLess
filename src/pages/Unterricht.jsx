@@ -19,9 +19,9 @@ export default function Unterricht() {
     : []
   const [activeSubject, setActiveSubject] = useState(subjects[0] ?? null)
   
-  // Navigiere zu Klasseneinstellungen (Lehrplan-Tab)
+  // Navigiere zu Verwaltung (Klasseneinstellungen)
   const goToClassSettings = () => {
-    navigate(`/klasseneinstellungen?classId=${activeClass.id}`)
+    navigate(`/verwaltung`)
   }
 
   // Wenn Klasse wechselt: Fach zurücksetzen
