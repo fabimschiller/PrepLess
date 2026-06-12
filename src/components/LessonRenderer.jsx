@@ -1,6 +1,7 @@
+import { memo } from 'react'
 import './LessonRenderer.css'
 
-export default function LessonRenderer({ lessonJson, isStreaming = false }) {
+const LessonRenderer = memo(function LessonRenderer({ lessonJson, isStreaming = false }) {
   if (!lessonJson || typeof lessonJson !== 'object') {
     return <div className="lesson-renderer-loading">Stunde wird geladen…</div>
   }
@@ -150,4 +151,6 @@ export default function LessonRenderer({ lessonJson, isStreaming = false }) {
       )}
     </div>
   )
-}
+})
+
+export default LessonRenderer

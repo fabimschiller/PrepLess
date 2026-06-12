@@ -6,7 +6,7 @@
  *   slot          – { unit, slotIndex, lesson | null } oder null
  *   onLessonSaved – fn(lesson)
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   getStudents as getStudentsDb,
   getCurriculumUnits,
@@ -111,11 +111,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
         setTopicSuggestions(suggestions)
       })
   }, [activeClass?.id])
-
-  // JSON-Parser: content → parsedLesson (content kommt aus dem Hook, parsedLesson auch)
-  useEffect(() => {
-    setParsedLesson(content.trim() ? parseLessonContent(content) : null)
-  }, [content]) // eslint-disable-line
 
   // Klassenwechsel: alles zurücksetzen
   useEffect(() => {
@@ -301,6 +296,13 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     }
   }
 
+  // Während Streaming: partialLesson bevorzugen, danach parsedLesson
+  // useMemo verhindert neue Objektreferenz bei jedem Render → React.memo auf LessonRenderer wirkt
+  const displayLesson = useMemo(
+    () => Object.keys(partialLesson).length > 0 ? partialLesson : parsedLesson,
+    [partialLesson, parsedLesson]
+  )
+
   // ─── Render ────────────────────────────────────────────────────────────────
 
   if (!slot) {
@@ -316,9 +318,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     const { unit, slotIndex } = slot
     const isStreaming = generating || refining
     const hasContent = content.length > 0
-    const displayLesson = Object.keys(partialLesson).length > 0 
-      ? partialLesson 
-      : parsedLesson
 
 
 

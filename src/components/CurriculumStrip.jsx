@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   getCurriculumUnits,
   getLessons,
@@ -198,9 +198,12 @@ export default function CurriculumStrip({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [units.length > 0])
 
-  const currentMonth = getCurrentSchoolMonth()
-  const enriched = units.map((u) => ({ ...u, status: computeUnitStatus(u, currentMonth) }))
-  const currentUnit = pickCurrentUnit(units)
+  const currentMonth = useMemo(() => getCurrentSchoolMonth(), [])
+  const enriched = useMemo(
+    () => units.map((u) => ({ ...u, status: computeUnitStatus(u, currentMonth) })),
+    [units, currentMonth]
+  )
+  const currentUnit = useMemo(() => pickCurrentUnit(units), [units])
   useEffect(() => {
     onCurrentUnitChange?.(currentUnit)
     // eslint-disable-next-line react-hooks/exhaustive-deps

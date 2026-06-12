@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { upsertLesson, deleteLesson } from '../lib/db'
 
 /**
@@ -22,6 +22,7 @@ export function useLessonSave({ activeClass, slot, topic, content, onLessonSaved
   const [autoSaving, setAutoSaving] = useState(false)
   const [autoSaveError, setAutoSaveError] = useState(null)
   const [wasAutoSaved, setWasAutoSaved] = useState(false)
+  const autoSaveTimerRef = useRef(null)
 
   const [hasUnsavedRefinement, setHasUnsavedRefinement] = useState(false)
 
@@ -77,7 +78,8 @@ export function useLessonSave({ activeClass, slot, topic, content, onLessonSaved
     setHasUnsavedRefinement(false)
     onLessonSaved?.(lesson)
 
-    setTimeout(() => setWasAutoSaved(false), 3000)
+    clearTimeout(autoSaveTimerRef.current)
+    autoSaveTimerRef.current = setTimeout(() => setWasAutoSaved(false), 3000)
   }
 
   // ─── Löschen ─────────────────────────────────────────────────────────
