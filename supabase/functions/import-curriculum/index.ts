@@ -46,6 +46,7 @@ ANTWORTE NUR MIT DEM JSON-ARRAY. BEGINNE MIT [ UND ENDE MIT ].`;
 interface ImportCurriculumRequest {
   classId: string;
   rawText: string;
+  subject?: string;
 }
 
 interface CurriculumUnit {
@@ -121,6 +122,7 @@ Deno.serve(async (req: Request) => {
 
   if (!body.classId) return jsonError(400, "classId fehlt.");
   if (!body.rawText?.trim()) return jsonError(400, "rawText fehlt.");
+  const subjectForUnits = body.subject ?? null;
   if (body.rawText.length > 20000) {
     return jsonError(400, "Text zu lang (max. 20.000 Zeichen).");
   }
@@ -167,11 +169,15 @@ Deno.serve(async (req: Request) => {
     auth: { persistSession: false },
   });
 
-  // Bestehende Einheiten löschen
-  const { error: delErr } = await supabase
+  // Bestehende Einheiten des gleichen Fachs löschen
+  let delQuery = supabase
     .from("curriculum_units")
     .delete()
     .eq("class_id", body.classId);
+  if (subjectForUnits) {
+    delQuery = delQuery.eq("subject", subjectForUnits);
+  }
+  const { error: delErr } = await delQuery;
 
   if (delErr) {
     return jsonError(500, `Fehler beim Löschen bestehender Einheiten: ${delErr.message}`);
@@ -186,6 +192,7 @@ Deno.serve(async (req: Request) => {
     estimated_hours: Math.max(1, Number(u.estimated_hours) || 6),
     start_month: Math.min(10, Math.max(1, Number(u.start_month) || 1)),
     end_month: Math.min(10, Math.max(1, Number(u.end_month) || 1)),
+    subject: subjectForUnits,
   }));
 
   const { data: inserted, error: insertErr } = await supabase

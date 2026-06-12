@@ -292,6 +292,12 @@ Deno.serve(async (req: Request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  // Welches Fach soll in den Units gespeichert werden?
+  // Wenn ein einzelnes Fach übergeben wurde, dieses; sonst null.
+  const subjectForUnits = subjects?.length === 1
+    ? subjects[0]
+    : (subject ?? null);
+
   const rows = units.map((u, idx) => ({
     class_id: classId,
     position: idx + 1,
@@ -300,6 +306,7 @@ Deno.serve(async (req: Request) => {
     estimated_hours: u.estimated_hours,
     start_month: u.start_month,
     end_month: u.end_month,
+    subject: subjectForUnits,
   }));
 
   const { data: inserted, error: insertErr } = await supabase

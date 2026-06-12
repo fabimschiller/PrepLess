@@ -3,7 +3,7 @@ import {
   getCurriculumUnits,
   updateCurriculumUnit,
   deleteCurriculumUnit,
-  deleteCurriculumUnitsByClass,
+  deleteCurriculumUnitsBySubject,
 } from '../../lib/db'
 import { useClasses } from '../../context/ClassesContext'
 import {
@@ -18,9 +18,9 @@ const MONTH_OPTIONS = Array.from({ length: 10 }, (_, i) => ({
   label: `${i + 1} – ${monthLabel(i + 1)}`,
 }))
 
-// ─── Pro-Klasse-Sektion ────────────────────────────────────────────────────────
+// ─── Lehrplan-Sektion pro Fach ────────────────────────────────────────────────
 
-function ClassCurriculumSection({ cls }) {
+function SubjectCurriculumSection({ cls, subject }) {
   const [units, setUnits] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -41,7 +41,7 @@ function ClassCurriculumSection({ cls }) {
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
-    const { data, error: err } = await getCurriculumUnits(cls.id)
+    const { data, error: err } = await getCurriculumUnits(cls.id, subject)
     if (err) {
       setError(err.message)
       setUnits([])
@@ -49,11 +49,9 @@ function ClassCurriculumSection({ cls }) {
       setUnits(data ?? [])
     }
     setLoading(false)
-  }, [cls.id])
+  }, [cls.id, subject])
 
-  useEffect(() => {
-    load()
-  }, [load])
+  useEffect(() => { load() }, [load])
 
   function startEdit(u) {
     setEditId(u.id)
@@ -66,10 +64,7 @@ function ClassCurriculumSection({ cls }) {
     })
   }
 
-  function cancelEdit() {
-    setEditId(null)
-    setEditValues({})
-  }
+  function cancelEdit() { setEditId(null); setEditValues({}) }
 
   async function saveEdit() {
     const payload = {
@@ -80,38 +75,55 @@ function ClassCurriculumSection({ cls }) {
       end_month: Number(editValues.end_month),
     }
     const { data, error: updErr } = await updateCurriculumUnit(editId, payload)
-    if (updErr) {
-      alert(updErr.message)
-      return
-    }
-    setUnits((prev) =>
-      prev.map((u) => (u.id === data.id ? { ...u, ...data } : u))
-    )
+    if (updErr) { alert(updErr.message); return }
+    setUnits((prev) => prev.map((u) => (u.id === data.id ? { ...u, ...data } : u)))
     cancelEdit()
   }
 
   async function deleteUnit(u) {
     if (!confirm(`Einheit „${u.title}" wirklich löschen?`)) return
     const { error: delErr } = await deleteCurriculumUnit(u.id)
-    if (delErr) {
-      alert(delErr.message)
-      return
-    }
+    if (delErr) { alert(delErr.message); return }
     setUnits((prev) => prev.filter((x) => x.id !== u.id))
+  }
+
+  async function regenerate(skipConfirm = false) {
+    if (
+      !skipConfirm &&
+      units.length > 0 &&
+      !confirm(`Lehrplan für „${subject}" in „${cls.name}" neu generieren? Bestehende Einheiten werden gelöscht.`)
+    ) return
+
+    setRegenerating(true); setRegenError(null); setRegenSuccess(null)
+    try {
+      if (units.length > 0) {
+        const { error: delErr } = await deleteCurriculumUnitsBySubject(cls.id, subject)
+        if (delErr) throw new Error(delErr.message)
+      }
+      await generateCurriculumForClass(cls, subject)
+      await load()
+      setRegenSuccess('Lehrplan neu generiert.')
+    } catch (err) {
+      setRegenError(err.message ?? String(err))
+    } finally {
+      setRegenerating(false)
+    }
   }
 
   async function handleImport() {
     if (!importText.trim()) return
     if (
       units.length > 0 &&
-      !confirm('Bestehende Einheiten werden durch den Import ersetzt. Fortfahren?')
+      !confirm(`Bestehende Einheiten für „${subject}" werden durch den Import ersetzt. Fortfahren?`)
     ) return
 
-    setImporting(true)
-    setImportError(null)
-    setImportSuccess(null)
+    setImporting(true); setImportError(null); setImportSuccess(null)
     try {
-      const result = await importCurriculum({ classId: cls.id, rawText: importText.trim() })
+      const result = await importCurriculum({
+        classId: cls.id,
+        rawText: importText.trim(),
+        subject,
+      })
       await load()
       setImportSuccess(`${result.count} Einheiten importiert.`)
       setImportText('')
@@ -123,41 +135,13 @@ function ClassCurriculumSection({ cls }) {
     }
   }
 
-  async function regenerate(skipConfirm = false) {
-    if (
-      !skipConfirm &&
-      units.length > 0 &&
-      !confirm(
-        `Lehrplan für „${cls.name}" neu generieren? Alle bestehenden Einheiten werden gelöscht.`
-      )
-    ) {
-      return
-    }
-    setRegenerating(true)
-    setRegenError(null)
-    setRegenSuccess(null)
-    try {
-      if (units.length > 0) {
-        const { error: delErr } = await deleteCurriculumUnitsByClass(cls.id)
-        if (delErr) throw new Error(delErr.message)
-      }
-      await generateCurriculumForClass(cls)
-      await load()
-      setRegenSuccess('Lehrplan neu generiert.')
-    } catch (err) {
-      setRegenError(err.message ?? String(err))
-    } finally {
-      setRegenerating(false)
-    }
-  }
-
   return (
-    <section className="card">
+    <section className="card" style={{ marginBottom: 16 }}>
       <div className="card-row">
         <div>
-          <h2>Lehrplan – {cls.name}</h2>
+          <h2>{subject}</h2>
           <p className="card-subtitle">
-            {cls.subject} · Jahrgang {cls.grade} · {cls.state}
+            {cls.name} · Jg. {cls.grade} · {units.length} Einheit{units.length !== 1 ? 'en' : ''}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -167,10 +151,9 @@ function ClassCurriculumSection({ cls }) {
             onClick={() => { setShowImport((v) => !v); setImportError(null) }}
             disabled={regenerating || importing}
           >
-            Eigenen Lehrplan importieren
+            Eigenen importieren
           </button>
-          {/* Neu-Generieren-Button nur anzeigen wenn schon Einheiten vorhanden */}
-          {units.length > 0 && (
+          {units.length > 0 ? (
             <button
               type="button"
               className="btn-secondary"
@@ -179,23 +162,28 @@ function ClassCurriculumSection({ cls }) {
             >
               {regenerating ? 'Generiert…' : 'Neu generieren'}
             </button>
+          ) : (
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => regenerate(true)}
+              disabled={regenerating || importing}
+            >
+              {regenerating ? 'Generiert…' : 'Lehrplan generieren'}
+            </button>
           )}
         </div>
       </div>
 
       {/* Import-Bereich */}
       {showImport && (
-        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <label htmlFor="import-text" style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-            Lehrplan als Text einfügen
-          </label>
+        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted, #666)', margin: 0 }}>
-            Kopiere deinen Lehrplan aus einem PDF, Word-Dokument oder einer Website und füge ihn hier ein. Die KI extrahiert automatisch die Themeneinheiten.
+            Kopiere deinen Lehrplan für <strong>{subject}</strong> aus einem PDF, Word-Dokument oder einer Website und füge ihn hier ein.
           </p>
           <textarea
-            id="import-text"
-            rows={8}
-            placeholder="z.B.: 1. Quadratische Funktionen (10 Std., September–Oktober)&#10;2. Lineare Gleichungssysteme (8 Std., November)&#10;..."
+            rows={7}
+            placeholder={`z.B.: 1. Quadratische Funktionen (10 Std., September–Oktober)\n2. Lineare Gleichungssysteme (8 Std., November)\n…`}
             value={importText}
             onChange={(e) => setImportText(e.target.value)}
             disabled={importing}
@@ -208,7 +196,7 @@ function ClassCurriculumSection({ cls }) {
               onClick={handleImport}
               disabled={importing || !importText.trim()}
             >
-              {importing ? 'Wird importiert…' : 'Lehrplan importieren'}
+              {importing ? 'Wird importiert…' : 'Importieren'}
             </button>
             <button
               type="button"
@@ -225,62 +213,33 @@ function ClassCurriculumSection({ cls }) {
 
       {importing && (
         <div className="loading-indicator" style={{ marginTop: 8 }}>
-          <span className="spinner" />
-          <span>Lehrplan wird aus Text extrahiert…</span>
+          <span className="spinner" /><span>Lehrplan wird aus Text extrahiert…</span>
         </div>
       )}
-      {importSuccess && (
-        <div className="alert success" style={{ marginTop: 8 }}>
-          {importSuccess}
-        </div>
-      )}
-
+      {importSuccess && <div className="alert success" style={{ marginTop: 8 }}>{importSuccess}</div>}
       {regenerating && (
         <div className="loading-indicator" style={{ marginTop: 8 }}>
-          <span className="spinner" />
-          <span>Lehrplan wird generiert…</span>
+          <span className="spinner" /><span>Lehrplan wird generiert…</span>
         </div>
       )}
-      {regenError && (
-        <div className="alert error" style={{ marginTop: 8 }}>
-          {regenError}
-        </div>
-      )}
-      {regenSuccess && (
-        <div className="alert success" style={{ marginTop: 8 }}>
-          {regenSuccess}
-        </div>
-      )}
+      {regenError && <div className="alert error" style={{ marginTop: 8 }}>{regenError}</div>}
+      {regenSuccess && <div className="alert success" style={{ marginTop: 8 }}>{regenSuccess}</div>}
 
       {loading && <p className="empty-state">Lädt…</p>}
       {error && <div className="alert error">{error}</div>}
 
-      {/* Noch kein Lehrplan: prominenter Generate-Button */}
-      {!loading && !error && units.length === 0 && !regenerating && (
-        <div className="curriculum-empty">
-          <p className="empty-state">
-            Noch kein Lehrplan vorhanden für diese Klasse.
-          </p>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => regenerate(true)}
-          >
-            Lehrplan generieren
-          </button>
-        </div>
+      {!loading && !error && units.length === 0 && !regenerating && !importing && (
+        <p className="empty-state" style={{ marginTop: 8 }}>
+          Noch kein Lehrplan für {subject}. Generieren oder eigenen Text importieren.
+        </p>
       )}
 
       {units.length > 0 && (
-        <table className="admin-table">
+        <table className="admin-table" style={{ marginTop: 12 }}>
           <thead>
             <tr>
-              <th>#</th>
-              <th>Titel</th>
-              <th>Beschreibung</th>
-              <th>Std.</th>
-              <th>Start</th>
-              <th>Ende</th>
+              <th>#</th><th>Titel</th><th>Beschreibung</th>
+              <th>Std.</th><th>Start</th><th>Ende</th>
               <th className="admin-table-actions">Aktionen</th>
             </tr>
           </thead>
@@ -292,120 +251,39 @@ function ClassCurriculumSection({ cls }) {
                   <td>{u.position}</td>
                   {isEditing ? (
                     <>
+                      <td><input value={editValues.title}
+                        onChange={(e) => setEditValues((v) => ({ ...v, title: e.target.value }))} /></td>
+                      <td><textarea rows={2} value={editValues.description}
+                        onChange={(e) => setEditValues((v) => ({ ...v, description: e.target.value }))} /></td>
+                      <td><input type="number" min={1} value={editValues.estimated_hours} className="num-input"
+                        onChange={(e) => setEditValues((v) => ({ ...v, estimated_hours: e.target.value }))} /></td>
                       <td>
-                        <input
-                          value={editValues.title}
-                          onChange={(e) =>
-                            setEditValues((v) => ({
-                              ...v,
-                              title: e.target.value,
-                            }))
-                          }
-                        />
-                      </td>
-                      <td>
-                        <textarea
-                          rows={2}
-                          value={editValues.description}
-                          onChange={(e) =>
-                            setEditValues((v) => ({
-                              ...v,
-                              description: e.target.value,
-                            }))
-                          }
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          min={1}
-                          value={editValues.estimated_hours}
-                          onChange={(e) =>
-                            setEditValues((v) => ({
-                              ...v,
-                              estimated_hours: e.target.value,
-                            }))
-                          }
-                          className="num-input"
-                        />
-                      </td>
-                      <td>
-                        <select
-                          value={editValues.start_month}
-                          onChange={(e) =>
-                            setEditValues((v) => ({
-                              ...v,
-                              start_month: e.target.value,
-                            }))
-                          }
-                        >
-                          {MONTH_OPTIONS.map((m) => (
-                            <option key={m.value} value={m.value}>
-                              {m.label}
-                            </option>
-                          ))}
+                        <select value={editValues.start_month}
+                          onChange={(e) => setEditValues((v) => ({ ...v, start_month: e.target.value }))}>
+                          {MONTH_OPTIONS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
                         </select>
                       </td>
                       <td>
-                        <select
-                          value={editValues.end_month}
-                          onChange={(e) =>
-                            setEditValues((v) => ({
-                              ...v,
-                              end_month: e.target.value,
-                            }))
-                          }
-                        >
-                          {MONTH_OPTIONS.map((m) => (
-                            <option key={m.value} value={m.value}>
-                              {m.label}
-                            </option>
-                          ))}
+                        <select value={editValues.end_month}
+                          onChange={(e) => setEditValues((v) => ({ ...v, end_month: e.target.value }))}>
+                          {MONTH_OPTIONS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
                         </select>
                       </td>
                       <td className="admin-table-actions">
-                        <button
-                          type="button"
-                          className="btn-primary btn-sm"
-                          onClick={saveEdit}
-                        >
-                          Speichern
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          onClick={cancelEdit}
-                        >
-                          Abbrechen
-                        </button>
+                        <button type="button" className="btn-primary btn-sm" onClick={saveEdit}>Speichern</button>
+                        <button type="button" className="btn-secondary" onClick={cancelEdit}>Abbrechen</button>
                       </td>
                     </>
                   ) : (
                     <>
-                      <td>
-                        <strong>{u.title}</strong>
-                      </td>
-                      <td className="cell-description">
-                        {u.description ?? '—'}
-                      </td>
+                      <td><strong>{u.title}</strong></td>
+                      <td className="cell-description">{u.description ?? '—'}</td>
                       <td>{u.estimated_hours} h</td>
                       <td>{monthLabel(u.start_month)}</td>
                       <td>{monthLabel(u.end_month)}</td>
                       <td className="admin-table-actions">
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          onClick={() => startEdit(u)}
-                        >
-                          Bearbeiten
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-danger"
-                          onClick={() => deleteUnit(u)}
-                        >
-                          Löschen
-                        </button>
+                        <button type="button" className="btn-secondary" onClick={() => startEdit(u)}>Bearbeiten</button>
+                        <button type="button" className="btn-danger" onClick={() => deleteUnit(u)}>Löschen</button>
                       </td>
                     </>
                   )}
@@ -427,16 +305,34 @@ export default function CurriculumAdmin() {
   if (!activeClass) {
     return (
       <div className="card">
-        <p className="empty-state">
-          Bitte erst eine Klasse in der Sidebar auswählen.
-        </p>
+        <p className="empty-state">Bitte erst eine Klasse in der Sidebar auswählen.</p>
+      </div>
+    )
+  }
+
+  const subjects = activeClass.subjects?.length
+    ? activeClass.subjects
+    : activeClass.subject
+    ? [activeClass.subject]
+    : []
+
+  if (subjects.length === 0) {
+    return (
+      <div className="card">
+        <p className="empty-state">Diese Klasse hat keine Fächer zugewiesen.</p>
       </div>
     )
   }
 
   return (
     <div className="admin-block">
-      <ClassCurriculumSection key={activeClass.id} cls={activeClass} />
+      {subjects.map((subject) => (
+        <SubjectCurriculumSection
+          key={`${activeClass.id}-${subject}`}
+          cls={activeClass}
+          subject={subject}
+        />
+      ))}
     </div>
   )
 }

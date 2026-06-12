@@ -26,12 +26,13 @@ import StartModal from './StartModal'
 import './LessonWorkspace.css'
 
 // ─── Haupt-Komponente ─────────────────────────────────────────────────────────
-export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
+export default function LessonWorkspace({ activeClass, activeSubject, slot, onLessonSaved }) {
   const [topic, setTopic] = useState('')
   const [content, setContent] = useState('')
   const [students, setStudents] = useState([])
   const [topicSuggestions, setTopicSuggestions] = useState([])
-  const [selectedSubject, setSelectedSubject] = useState('')
+  // selectedSubject: extern über activeSubject gesteuert
+  const selectedSubject = activeSubject || activeClass?.subject || ''
   const [materials, setMaterials] = useState(null)
   const [materialsLoading, setMaterialsLoading] = useState(false)
   const [showMaterialsModal, setShowMaterialsModal] = useState(false)
@@ -113,12 +114,11 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       })
   }, [activeClass?.id])
 
-  // Klassenwechsel: alles zurücksetzen + Fach initialisieren
+  // Klassenwechsel: alles zurücksetzen
   useEffect(() => {
     setTopic('')
     resetStream()
     resetSave()
-    setSelectedSubject(activeClass?.subjects?.[0] ?? activeClass?.subject ?? '')
   }, [activeClass?.id]) // eslint-disable-line
 
   // Slot wechselt: Felder zurücksetzen / vorbelegen
@@ -335,23 +335,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
           </p>
         </div>
       </div>
-
-      {/* Fach-Auswahl: nur wenn Klasse mehrere Fächer hat */}
-      {(activeClass.subjects?.length ?? 0) > 1 && (
-        <div className="field">
-          <label htmlFor="ws-subject">Fach dieser Stunde</label>
-          <select
-            id="ws-subject"
-            value={selectedSubject}
-            onChange={(e) => setSelectedSubject(e.target.value)}
-            disabled={isStreaming}
-          >
-            {activeClass.subjects.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
-      )}
 
       <div className="field">
         <label htmlFor="ws-topic">Thema der Stunde</label>

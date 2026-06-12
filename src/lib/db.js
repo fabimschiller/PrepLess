@@ -183,14 +183,15 @@ export async function markLessonConducted(lessonId, status = 'conducted') {
 }
 
 // ─── CURRICULUM UNITS ──────────────────────────────────────────────────
-export async function getCurriculumUnits(classId) {
-  return await supabase
+export async function getCurriculumUnits(classId, subject = null) {
+  let query = supabase
     .from('curriculum_units')
     .select(
-      'id, class_id, position, title, description, estimated_hours, start_month, end_month'
+      'id, class_id, subject, position, title, description, estimated_hours, start_month, end_month'
     )
     .eq('class_id', classId)
-    .order('position', { ascending: true })
+  if (subject) query = query.eq('subject', subject)
+  return query.order('position', { ascending: true })
 }
 
 export async function createCurriculumUnit(classId, unitData) {
@@ -231,6 +232,14 @@ export async function deleteCurriculumUnitsByClass(classId) {
     .from('curriculum_units')
     .delete()
     .eq('class_id', classId)
+}
+
+export async function deleteCurriculumUnitsBySubject(classId, subject) {
+  return await supabase
+    .from('curriculum_units')
+    .delete()
+    .eq('class_id', classId)
+    .eq('subject', subject)
 }
 
 // ─── OBSERVATIONS ──────────────────────────────────────────────────────

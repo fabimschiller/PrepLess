@@ -138,6 +138,69 @@
   opacity: 0.65;
 }
 
+/* Klasse hinzufügen */
+.sidebar-add-class-btn {
+  width: 100%;
+  margin-top: 6px;
+  padding: 7px 10px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-family: var(--sans);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.12s, color 0.12s;
+}
+
+.sidebar-add-class-btn:hover {
+  background: var(--bg);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.sidebar-add-form {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-add-form .field {
+  margin: 0;
+}
+
+.sidebar-add-form input,
+.sidebar-add-form select {
+  width: 100%;
+  font-size: 12.5px;
+  padding: 6px 8px;
+}
+
+.subject-checkboxes-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.subject-checkbox-label-mini {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.subject-checkbox-label-mini input {
+  width: auto;
+  margin: 0;
+}
+
 /* Trennlinien */
 .sidebar-divider {
   border: none;

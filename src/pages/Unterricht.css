@@ -34,6 +34,39 @@
   min-width: 0;
 }
 
+/* Fach-Auswahl Tabs */
+.subject-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.subject-tab {
+  padding: 6px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: var(--sans);
+  cursor: pointer;
+  transition: background-color 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.subject-tab:hover {
+  background: var(--bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.subject-tab.active {
+  background: rgba(170, 59, 255, 0.1);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
 @media (max-width: 1000px) {
   .unterricht-grid {
     grid-template-columns: 1fr;

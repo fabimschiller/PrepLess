@@ -2,9 +2,11 @@ import { supabase } from './supabase'
 
 /**
  * Ruft die Edge Function `generate-curriculum` auf.
+ * @param {Object} cls - Klassen-Objekt
+ * @param {string} [subject] - Spezifisches Fach (optional). Wenn nicht angegeben, alle Fächer.
  * Wirft bei Fehlern.
  */
-export async function generateCurriculumForClass(cls) {
+export async function generateCurriculumForClass(cls, subject = null) {
   const { data: sessionData } = await supabase.auth.getSession()
   const accessToken = sessionData?.session?.access_token
   if (!accessToken) throw new Error('Nicht eingeloggt.')
@@ -21,8 +23,8 @@ export async function generateCurriculumForClass(cls) {
     },
     body: JSON.stringify({
       classId: cls.id,
-      subject: cls.subject,
-      subjects: cls.subjects ?? [],
+      subject: subject ?? cls.subject,
+      subjects: subject ? [subject] : (cls.subjects ?? []),
       school_type: cls.school_type ?? '',
       grade: cls.grade,
       state: cls.state,

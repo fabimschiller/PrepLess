@@ -6,7 +6,6 @@ import {
 } from '../lib/db'
 import {
   computeUnitStatus,
-  generateCurriculumForClass,
   getCurrentSchoolMonth,
   monthRangeLabel,
   pickCurrentUnit,
@@ -16,6 +15,7 @@ import './CurriculumStrip.css'
 
 export default function CurriculumStrip({
   classId,
+  activeSubject = null,
   activeClass,
   refreshKey = 0,
   onCurrentUnitChange,
@@ -29,9 +29,6 @@ export default function CurriculumStrip({
   const [units, setUnits] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [generating, setGenerating] = useState(false)
-  const [genError, setGenError] = useState(null)
-
   // Aufgeklappte Einheit
   const [expandedUnitId, setExpandedUnitId] = useState(null)
   const [userExpanded, setUserExpanded] = useState(false)
@@ -63,7 +60,7 @@ export default function CurriculumStrip({
 
     // Units + alle Stunden der Klasse in einem Schritt laden
     Promise.all([
-      getCurriculumUnits(classId),
+      getCurriculumUnits(classId, activeSubject),
       getLessons(classId, 1000),
     ]).then(([unitsRes, lessonsRes]) => {
       if (cancelled) return
@@ -114,7 +111,7 @@ export default function CurriculumStrip({
     })
 
     return () => { cancelled = true }
-  }, [classId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [classId, activeSubject]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const cleanup = load()
@@ -231,46 +228,22 @@ export default function CurriculumStrip({
     setConductedModal(null)
   }
 
-  async function handleGenerate() {
-    if (!activeClass) return
-    setGenerating(true); setGenError(null)
-    try {
-      await generateCurriculumForClass(activeClass)
-      load()
-    } catch (err) {
-      setGenError(err.message ?? String(err))
-    } finally {
-      setGenerating(false)
-    }
-  }
-
   if (!classId) return null
 
   return (
     <section className="curriculum-strip">
       <div className="curriculum-strip-head">
-        <h3>Lehrplan</h3>
+        <h3>Lehrplan{activeSubject ? ` · ${activeSubject}` : ''}</h3>
       </div>
 
       {loading && <p className="empty-state">Lädt…</p>}
       {error && <div className="alert error">{error}</div>}
-      {genError && <div className="alert error">{genError}</div>}
 
       {!loading && !error && units.length === 0 && (
         <div className="strip-empty">
-          {generating ? (
-            <div className="loading-indicator">
-              <span className="spinner" />
-              <span>Lehrplan wird erzeugt…</span>
-            </div>
-          ) : (
-            <>
-              <p className="empty-state">Noch kein Lehrplan für diese Klasse.</p>
-              <button type="button" className="btn-primary btn-sm" onClick={handleGenerate}>
-                Lehrplan erzeugen
-              </button>
-            </>
-          )}
+          <p className="empty-state">
+            Kein Lehrplan vorhanden. Lege ihn unter Verwaltung → Lehrplan an.
+          </p>
         </div>
       )}
 
