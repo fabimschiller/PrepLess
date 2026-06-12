@@ -332,11 +332,26 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       setContent(lesson.content ?? '')
       setSavedLessonId(lesson.id)
       setLessonStatus(lesson.status ?? 'planned')
+      
+      // Direkt parsedLesson setzen wenn content vorhanden
+      if (lesson.content) {
+        try {
+          const parsed = JSON.parse(lesson.content)
+          setParsedLesson(parsed)
+          console.log('✓ Parsed saved lesson content directly')
+        } catch (e) {
+          console.log('Failed to parse saved lesson content:', e.message)
+          setParsedLesson(null)
+        }
+      } else {
+        setParsedLesson(null)
+      }
     } else {
       setTopic('')
       setContent('')
       setSavedLessonId(null)
       setLessonStatus(null)
+      setParsedLesson(null)
       // Starte Themenvorschlag für leeren Slot
       suggestTopic()
     }
