@@ -409,13 +409,18 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   }
 
   async function suggestTopic() {
-    if (!activeClass || !slot) return
+    console.log('suggestTopic: start', { activeClass: !!activeClass, slot: !!slot })
+    if (!activeClass || !slot) {
+      console.log('suggestTopic: early return - missing activeClass or slot')
+      return
+    }
     setTopicSuggesting(true)
     try {
       // Letzte 5 Stunden für Kontext
       const { data: prevLessons } = await getLessons(activeClass.id, 5)
       const previousLessons = (prevLessons ?? []).map((l) => l.title).filter(Boolean)
 
+      console.log('suggestTopic: calling generateLesson API')
       const result = await generateLesson({
         suggestionOnly: true,
         slotIndex: slot.slotIndex,
@@ -425,8 +430,12 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
         previousLessons,
       })
 
+      console.log('suggestTopic: response', { result })
       if (result.suggestions && Array.isArray(result.suggestions)) {
+        console.log('suggestTopic: suggestions set', result.suggestions)
         setAiSuggestions(result.suggestions)
+      } else {
+        console.log('suggestTopic: no suggestions in response', { suggestions: result.suggestions })
       }
     } catch (err) {
       console.error('suggestTopic error:', err)
