@@ -32,12 +32,17 @@ export function ClassesProvider({ children }) {
   const loadClasses = useCallback(async () => {
     setLoading(true)
     setError(null)
-    const { data, error: err } = await getClasses()
+    console.log('ClassesContext: loadClasses called')
+    const result = await getClasses()
+    const { data, error: err } = result
+    console.log('getClasses result:', data, err)
 
     if (err) {
+      console.error('getClasses error:', err.message)
       setError(err.message)
       setClasses([])
     } else {
+      console.log('getClasses success, setting', data?.length, 'classes')
       setClasses(data ?? [])
     }
     setLoading(false)
