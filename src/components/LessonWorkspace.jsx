@@ -250,10 +250,13 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       return
     }
 
+    console.log('content slice:', content?.substring(0, 100))
+
     try {
       // Versuch 1: Direktes JSON.parse
       const parsed = JSON.parse(content)
       if (parsed && typeof parsed === 'object' && parsed.titel) {
+        console.log('✓ JSON.parse succeeded, parsedLesson set')
         setParsedLesson(parsed)
         return
       }
@@ -324,6 +327,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
 
     const { unit, slotIndex, lesson } = slot
     if (lesson) {
+      console.log('Loading lesson:', lesson.id, 'hasContent:', !!lesson.content, 'contentSlice:', lesson.content?.substring(0, 100))
       setTopic(lesson.title ?? '')
       setContent(lesson.content ?? '')
       setSavedLessonId(lesson.id)
