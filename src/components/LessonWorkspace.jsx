@@ -13,8 +13,6 @@ import {
   getCurriculumUnits,
   getLessons,
   getObservations,
-  upsertLesson,
-  deleteLesson,
   getLearningProgressByLesson,
   createLearningProgress,
   getProfile,
@@ -22,6 +20,7 @@ import {
 } from '../lib/db'
 import { getSession } from '../lib/auth'
 import { generateLesson, suggestMaterials, suggestLearning, suggestTopic as suggestTopicAPI } from '../lib/api'
+import { useLessonSave } from '../hooks/useLessonSave'
 import LessonRenderer from './LessonRenderer'
 import './LessonWorkspace.css'
 
@@ -215,17 +214,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   const [content, setContent] = useState('')
   const [parsedLesson, setParsedLesson] = useState(null)
   const [partialLesson, setPartialLesson] = useState({})
-  const [savedLessonId, setSavedLessonId] = useState(null)
-  const [lessonStatus, setLessonStatus] = useState(null)
   const [generating, setGenerating] = useState(false)
   const [genError, setGenError] = useState(null)
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState(null)
-  const [saveSuccess, setSaveSuccess] = useState(null)
-  const [autoSaving, setAutoSaving] = useState(false)
-  const [autoSaveError, setAutoSaveError] = useState(null)
-  const [wasAutoSaved, setWasAutoSaved] = useState(false)
-  const [hasUnsavedRefinement, setHasUnsavedRefinement] = useState(false)
   const [refinement, setRefinement] = useState('')
   const [refining, setRefining] = useState(false)
   const [topicSuggesting, setTopicSuggesting] = useState(false)
@@ -243,6 +233,15 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   const [showStartModal, setShowStartModal] = useState(false)
 
   const abortRef = useRef(null)
+
+  const {
+    savedLessonId, lessonStatus,
+    saving, saveError, saveSuccess,
+    autoSaving, autoSaveError, wasAutoSaved,
+    hasUnsavedRefinement, setHasUnsavedRefinement,
+    handleSave, handleAutoSave, handleDelete,
+    reset: resetSave,
+  } = useLessonSave({ activeClass, slot, topic, content, onLessonSaved })
 
   // Modal-Close: Escape-Taste
   useEffect(() => {
@@ -305,9 +304,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   useEffect(() => {
     setContent('')
     setParsedLesson(null)
-    setSavedLessonId(null)
-    setLessonStatus(null)
     setTopic('')
+    resetSave()
     abortRef.current?.abort()
   }, [activeClass?.id]) // eslint-disable-line
 
@@ -316,34 +314,28 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     abortRef.current?.abort()
     setGenerating(false)
     setRefining(false)
-    setSaveSuccess(null)
-    setSaveError(null)
     setGenError(null)
     setRefinement('')
     setTopicSuggesting(false)
     setAiSuggestions([])
-    setHasUnsavedRefinement(false)
 
     if (!slot) {
-      setTopic(''); setContent(''); setSavedLessonId(null); setLessonStatus(null)
+      setTopic(''); setContent(''); setParsedLesson(null); resetSave()
       return
     }
 
-    const { unit, slotIndex, lesson } = slot
-    
+    const { lesson } = slot
+
     if (lesson) {
       setTopic(lesson.title ?? '')
       setContent(lesson.content ?? '')  // Setzt content → trigger Parser-useEffect
-      setSavedLessonId(lesson.id)
-      setLessonStatus(lesson.status ?? 'planned')
+      resetSave({ lessonId: lesson.id, status: lesson.status ?? 'planned' })
       // parsedLesson wird durch den content-useEffect gesetzt
     } else {
       setTopic('')
       setContent('')
-      setSavedLessonId(null)
-      setLessonStatus(null)
       setParsedLesson(null)
-      // Leerer Slot → suggestTopic aufrufen
+      resetSave()
       suggestTopic()
     }
   }, [slot]) // eslint-disable-line
@@ -423,8 +415,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     if (!topic.trim()) { setGenError('Bitte ein Thema eingeben.'); return }
     setGenerating(true); setGenError(null); setContent('')
     setPartialLesson({}); setParsedLesson(null)
-    setSavedLessonId(null); setSaveSuccess(null); setSaveError(null)
-    setHasUnsavedRefinement(false)
+    resetSave()  // savedLessonId, saveError, saveSuccess, hasUnsavedRefinement zurücksetzen
 
     try {
       const { response, signal } = await callGenerateStream()
@@ -554,73 +545,7 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     win.document.close()
   }
 
-  async function handleSave() {
-    if (!content.trim() || !activeClass || !slot) return
-    setSaving(true); setSaveError(null); setSaveSuccess(null)
 
-    const { data: lesson, error: insErr } = await upsertLesson({
-      ...(savedLessonId ? { id: savedLessonId } : {}),
-      class_id: activeClass.id,
-      curriculum_unit_id: slot.unit.id,
-      position: slot.slotIndex + 1,
-      title: topic.trim() || `Stunde ${slot.slotIndex + 1}`,
-      content: content.trim(),
-    })
-
-    setSaving(false)
-    if (insErr) { setSaveError(insErr.message); return }
-    setSavedLessonId(lesson.id)
-    setLessonStatus(lesson.status ?? 'planned')
-    setSaveSuccess('Stunde gespeichert.')
-    setHasUnsavedRefinement(false)
-    onLessonSaved?.(lesson)
-  }
-
-  async function handleAutoSave(contentToSave) {
-    const saveContent = contentToSave ?? content
-    if (!saveContent.trim() || !activeClass || !slot) return
-    setAutoSaving(true); setAutoSaveError(null)
-
-    const { data: lesson, error: insErr } = await upsertLesson({
-      ...(savedLessonId ? { id: savedLessonId } : {}),
-      class_id: activeClass.id,
-      curriculum_unit_id: slot.unit.id,
-      position: slot.slotIndex + 1,
-      title: topic.trim() || `Stunde ${slot.slotIndex + 1}`,
-      content: saveContent.trim(),
-    })
-
-    setAutoSaving(false)
-    if (insErr) {
-      setAutoSaveError(insErr.message)
-      console.error('Auto-Save fehlgeschlagen:', insErr.message)
-      return
-    }
-
-    setSavedLessonId(lesson.id)
-    setLessonStatus(lesson.status ?? 'planned')
-    setWasAutoSaved(true)
-    setHasUnsavedRefinement(false)
-    onLessonSaved?.(lesson)
-
-    // Erfolgs-Meldung nach 3 Sekunden ausblenden
-    setTimeout(() => setWasAutoSaved(false), 3000)
-  }
-
-  async function handleDelete() {
-    if (!savedLessonId) return
-    if (!window.confirm('Stunde wirklich löschen?')) return
-
-    const { error } = await deleteLesson(savedLessonId)
-    if (error) {
-      console.error('Löschen fehlgeschlagen:', error)
-      setGenError(`Fehler beim Löschen: ${error.message}`)
-      return
-    }
-
-    // TODO: Später saubere Cache-Invalidierung statt reload()
-    window.location.reload()
-  }
 
   async function handleSuggestMaterials() {
     if (!content.trim() || !activeClass) return
