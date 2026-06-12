@@ -787,8 +787,11 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
   }
 
    const { unit, slotIndex } = slot
-   const isStreaming = generating || refining
-   const hasContent = content.length > 0
+    const isStreaming = generating || refining
+    const hasContent = content.length > 0
+    const displayLesson = Object.keys(partialLesson).length > 0 
+      ? partialLesson 
+      : parsedLesson
 
     console.log('[LessonWorkspace Render]', {
       savedLessonId,
@@ -799,7 +802,8 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
       contentLength: content.length,
       parsedLessonExists: !!parsedLesson,
       parsedLessonKeys: parsedLesson ? Object.keys(parsedLesson) : [],
-      renderCondition: isStreaming || Object.keys(partialLesson).length > 0 || parsedLesson,
+      displayLesson: !!displayLesson,
+      renderCondition: isStreaming || displayLesson,
     })
 
   return (
@@ -933,17 +937,17 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
 
        {(isStreaming || hasContent) && (
          <div className="workspace-content-wrap">
-            {hasContent && (
-              <>
-                {isStreaming || Object.keys(partialLesson).length > 0 || parsedLesson ? (
-                  <LessonRenderer lessonJson={parsedLesson || partialLesson} isStreaming={isStreaming} />
-                ) : (
-                  <pre className="workspace-content">
-                    {content}
-                  </pre>
-                )}
-              </>
-            )}
+             {hasContent && (
+               <>
+                 {(isStreaming || displayLesson) ? (
+                   <LessonRenderer lessonJson={displayLesson} isStreaming={isStreaming} />
+                 ) : (
+                   <pre className="workspace-content">
+                     {content}
+                   </pre>
+                 )}
+               </>
+             )}
          </div>
        )}
 
