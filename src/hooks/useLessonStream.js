@@ -220,7 +220,7 @@ export function useLessonStream({
       const parsed = parseLessonContent(acc)
       if (parsed) {
         setParsedLesson(parsed)
-        setPartialLesson(parsed)
+        setPartialLesson({})  // leeren — parsedLesson übernimmt ab jetzt
         await handleAutoSave(acc)
       }
     } catch (err) {
@@ -257,7 +257,7 @@ export function useLessonStream({
       const parsed = parseLessonContent(acc)
       if (parsed) {
         setParsedLesson(parsed)
-        setPartialLesson(parsed)
+        setPartialLesson({})  // leeren — parsedLesson übernimmt ab jetzt
         setHasUnsavedRefinement(true)
       }
     } catch (err) {
