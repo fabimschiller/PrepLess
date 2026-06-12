@@ -99,7 +99,7 @@ function extractPartialLesson(jsonString) {
 }
 
 // ─── Lesson Content Parser ────────────────────────────────────────────────────
-function parseLessonContent(content) {
+export function parseLessonContent(content) {
   if (!content || !content.trim()) return null
 
   try {
@@ -333,7 +333,5 @@ export function useLessonStream({
     handleAbort,
     suggestTopic,
     resetStream,
-    // Hilfsfunktion für content-useEffect
-    parseLessonContent,
   }
 }

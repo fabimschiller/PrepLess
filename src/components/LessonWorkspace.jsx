@@ -18,7 +18,7 @@ import {
 import { getSession } from '../lib/auth'
 import { suggestMaterials, suggestLearning } from '../lib/api'
 import { useLessonSave } from '../hooks/useLessonSave'
-import { useLessonStream } from '../hooks/useLessonStream'
+import { useLessonStream, parseLessonContent } from '../hooks/useLessonStream'
 import LessonRenderer from './LessonRenderer'
 import MaterialsModal from './MaterialsModal'
 import LearningModal from './LearningModal'
@@ -64,7 +64,6 @@ export default function LessonWorkspace({ activeClass, slot, onLessonSaved }) {
     handleAbort,
     suggestTopic,
     resetStream,
-    parseLessonContent,
   } = useLessonStream({ activeClass, slot, topic, students, content, setContent, handleAutoSave, setHasUnsavedRefinement, resetSave })
 
   // Modal-Close: Escape-Taste
