@@ -148,7 +148,7 @@ export default function LessonWorkspace({ activeClass, activeSubject, slot, onLe
     const lesson = parsedLesson || parseLessonContent(content)
     if (!lesson) return
 
-    const win = window.open('', '_blank', 'width=800,height=900')
+    const win = window.open('', '_blank', 'width=900,height=900')
     if (!win) return
 
     const meta = {
@@ -169,61 +169,66 @@ export default function LessonWorkspace({ activeClass, activeSubject, slot, onLe
   <title>${lesson.titel ?? 'Unterrichtsstunde'}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* ── Gemeinsame Karten-Stile ───────────────────────────────────── */
+    .karte {
+      width: 105mm;
+      height: 148mm;
+      padding: 6mm;
+      overflow: hidden;
+      border: 0.5px solid #ccc;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 9pt;
+      line-height: 1.4;
+      color: #111;
+    }
+    .karte-leer { background: #fafafa; }
+
+    /* ── Screen ────────────────────────────────────────────────────── */
     @media screen {
-      body { background: #e8e8e8; padding: 20px; }
-      .karte {
-        width: 105mm;
-        min-height: 148mm;
-        margin: 12px auto;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 8mm;
-        background: #fff;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.10);
-        font-family: 'DM Sans', sans-serif;
-        font-size: 9pt;
-        line-height: 1.45;
-        color: #111;
-        overflow: hidden;
+      body { background: #f0f0f0; padding: 20px; }
+      .seite {
+        width: 210mm;
+        display: grid;
+        grid-template-columns: 105mm 105mm;
+        grid-template-rows: 148mm 148mm;
+        margin: 0 auto 20px;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
       }
     }
 
+    /* ── Print ─────────────────────────────────────────────────────── */
     @media print {
-      body { margin: 0; background: #fff; }
-      .karte {
-        width: 105mm;
-        height: 148mm;
+      body { width: 210mm; margin: 0; background: #fff; }
+      .seite {
+        width: 210mm;
+        height: 297mm;
+        display: grid;
+        grid-template-columns: 105mm 105mm;
+        grid-template-rows: 148mm 148mm;
         page-break-after: always;
-        overflow: hidden;
-        padding: 8mm;
-        box-sizing: border-box;
-        font-family: 'DM Sans', sans-serif;
-        font-size: 8.5pt;
-        line-height: 1.4;
-        color: #111;
       }
-      .karte:last-child { page-break-after: avoid; }
+      .seite:last-child { page-break-after: avoid; }
     }
 
-    /* Karte 0: Übersicht */
+    /* ── Karte 0: Übersicht ────────────────────────────────────────── */
     .karte-logo {
       font-size: 7pt;
       font-weight: 700;
       letter-spacing: 0.08em;
-      color: #aaa;
+      color: #bbb;
       text-align: right;
-      margin-bottom: 6mm;
+      margin-bottom: 5mm;
     }
     .karte-titel {
-      font-size: 14pt;
+      font-size: 11pt;
       font-weight: 700;
       line-height: 1.2;
-      margin-bottom: 2mm;
-      color: #111;
+      margin-bottom: 1.5mm;
     }
     .karte-meta {
       font-size: 8pt;
@@ -232,19 +237,19 @@ export default function LessonWorkspace({ activeClass, activeSubject, slot, onLe
     }
     .karte-dauer {
       font-size: 8pt;
-      color: #888;
+      color: #999;
       margin-bottom: 4mm;
     }
     .karte-section-label {
-      font-size: 7.5pt;
+      font-size: 7pt;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #888;
-      margin-bottom: 2mm;
+      letter-spacing: 0.07em;
+      color: #999;
+      margin-bottom: 1.5mm;
     }
     .karte-lernziele ul {
-      padding-left: 4mm;
+      padding-left: 3.5mm;
     }
     .karte-lernziele li {
       font-size: 8.5pt;
@@ -252,36 +257,34 @@ export default function LessonWorkspace({ activeClass, activeSubject, slot, onLe
       color: #222;
     }
 
-    /* Karten 1…N: Phasen */
+    /* ── Karten 1…N: Phasen ───────────────────────────────────────── */
     .karte-phase-header {
       display: flex;
       align-items: baseline;
       gap: 2mm;
-      margin-bottom: 3mm;
-      border-bottom: 0.5pt solid #e0e0e0;
+      margin-bottom: 2.5mm;
+      border-bottom: 0.5px solid #e0e0e0;
       padding-bottom: 2mm;
     }
     .karte-phase-num {
-      font-size: 16pt;
+      font-size: 15pt;
       font-weight: 700;
-      color: #ccc;
+      color: #ddd;
       line-height: 1;
     }
     .karte-phase-titel {
       font-size: 10pt;
       font-weight: 700;
-      color: #111;
       flex: 1;
     }
     .karte-phase-dauer {
       font-size: 8pt;
-      color: #888;
+      color: #999;
       white-space: nowrap;
     }
     .karte-kurzfassung {
-      font-size: 10.5pt;
+      font-size: 10pt;
       font-weight: 600;
-      color: #111;
       line-height: 1.3;
       margin-bottom: 3mm;
     }
@@ -289,7 +292,7 @@ export default function LessonWorkspace({ activeClass, activeSubject, slot, onLe
       display: flex;
       flex-direction: column;
       gap: 1.5mm;
-      margin-bottom: 3mm;
+      margin-bottom: 2.5mm;
     }
     .karte-aktion {
       font-size: 8pt;
@@ -298,36 +301,29 @@ export default function LessonWorkspace({ activeClass, activeSubject, slot, onLe
       gap: 1.5mm;
       align-items: flex-start;
     }
-    .karte-aktion-icon {
-      flex-shrink: 0;
-    }
+    .karte-aktion-icon { flex-shrink: 0; }
     .karte-material {
       font-size: 7.5pt;
       color: #555;
       padding-left: 3.5mm;
       margin-bottom: 2mm;
     }
-    .karte-material li {
-      margin-bottom: 0.75mm;
-    }
+    .karte-material li { margin-bottom: 0.75mm; }
     .karte-transition {
       font-size: 7.5pt;
-      color: #999;
+      color: #aaa;
       font-style: italic;
-      margin-top: auto;
       padding-top: 2mm;
-      border-top: 0.5pt solid #eee;
+      border-top: 0.5px solid #eee;
+      margin-top: 2mm;
     }
 
-    /* Letzte Karte: Differenzierung */
-    .karte-diff-block {
-      margin-bottom: 3mm;
-    }
+    /* ── Letzte Karte: Differenzierung ────────────────────────────── */
+    .karte-diff-block { margin-bottom: 3mm; }
     .karte-diff-label {
       font-size: 9pt;
       font-weight: 700;
       margin-bottom: 1.5mm;
-      color: #333;
     }
     .karte-diff-block p {
       font-size: 8.5pt;
@@ -336,7 +332,7 @@ export default function LessonWorkspace({ activeClass, activeSubject, slot, onLe
     }
     .karte-diff-hr {
       border: none;
-      border-top: 0.5pt solid #ddd;
+      border-top: 0.5px solid #ddd;
       margin: 3mm 0;
     }
   </style>
