@@ -553,15 +553,12 @@ export default function LessonWorkspace({ activeClass, activeSubject, slot, onLe
            <button
              className="btn-primary"
              type="button"
-          onClick={() => {
-                if (!materials) {
-                  handleSuggestMaterials()
-                }
+           onClick={() => {
+                if (!materials) handleSuggestMaterials()
                 setShowMaterialsModal(true)
               }}
-             disabled={materialsLoading}
            >
-             {materialsLoading ? 'Materialien werden vorgeschlagen…' : '📚 Material'}
+             📚 Material
            </button>
          )}
          {savedLessonId && !isStreaming && (
@@ -667,6 +664,7 @@ export default function LessonWorkspace({ activeClass, activeSubject, slot, onLe
       {showMaterialsModal && (
         <MaterialsModal
           materials={materials}
+          isLoading={materialsLoading}
           onClose={() => setShowMaterialsModal(false)}
         />
       )}

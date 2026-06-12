@@ -1,4 +1,4 @@
-export default function MaterialsModal({ materials, onClose }) {
+export default function MaterialsModal({ materials, isLoading, onClose }) {
   return (
     <div className="materials-modal-overlay" onClick={onClose}>
       <div className="materials-modal" onClick={(e) => e.stopPropagation()}>
@@ -15,7 +15,12 @@ export default function MaterialsModal({ materials, onClose }) {
         </div>
 
         <div className="materials-modal-content">
-          {!materials ? (
+          {isLoading ? (
+            <div className="materials-loading">
+              <span className="spinner" />
+              <p>Materialien werden zusammengestellt…</p>
+            </div>
+          ) : !materials ? (
             <div className="materials-error">
               <p>Keine Materialien geladen.</p>
             </div>
