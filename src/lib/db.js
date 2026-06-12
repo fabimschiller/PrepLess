@@ -190,7 +190,8 @@ export async function getCurriculumUnits(classId, subject = null) {
       'id, class_id, subject, position, title, description, estimated_hours, start_month, end_month'
     )
     .eq('class_id', classId)
-  if (subject) query = query.eq('subject', subject)
+  // subject-Filter: exaktes Fach ODER subject IS NULL (Altdaten ohne Fach-Zuordnung)
+  if (subject) query = query.or(`subject.eq.${subject},subject.is.null`)
   return query.order('position', { ascending: true })
 }
 
@@ -239,7 +240,7 @@ export async function deleteCurriculumUnitsBySubject(classId, subject) {
     .from('curriculum_units')
     .delete()
     .eq('class_id', classId)
-    .eq('subject', subject)
+    .or(`subject.eq.${subject},subject.is.null`)
 }
 
 // ─── OBSERVATIONS ──────────────────────────────────────────────────────
