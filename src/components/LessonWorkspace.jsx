@@ -7,6 +7,7 @@
  *   onLessonSaved – fn(lesson)
  */
 import { useEffect, useMemo, useState } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import {
   getStudents as getStudentsDb,
   getCurriculumUnits,
@@ -23,6 +24,7 @@ import LessonRenderer from './LessonRenderer'
 import MaterialsModal from './MaterialsModal'
 import LearningModal from './LearningModal'
 import StartModal from './StartModal'
+import PrintView from './PrintView'
 import './LessonWorkspace.css'
 
 // ─── Haupt-Komponente ─────────────────────────────────────────────────────────
@@ -143,54 +145,204 @@ export default function LessonWorkspace({ activeClass, activeSubject, slot, onLe
   }, [slot]) // eslint-disable-line
 
   function handlePrint() {
-    const win = window.open('', '_blank', 'width=900,height=700')
+    const lesson = parsedLesson || parseLessonContent(content)
+    if (!lesson) return
+
+    const win = window.open('', '_blank', 'width=800,height=900')
     if (!win) return
 
-    const heading = `${activeClass.name} – ${topic.trim() || slot?.unit?.title || 'Unterrichtsstunde'}`
-    const escapedContent = content
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
+    const meta = {
+      subject: selectedSubject || activeClass.subject,
+      grade: activeClass.grade,
+      schoolType: activeClass.school_type,
+      className: activeClass.name,
+    }
+
+    const bodyHtml = renderToStaticMarkup(
+      <PrintView lessonJson={lesson} meta={meta} />
+    )
 
     win.document.write(`<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>${heading}</title>
+  <title>${lesson.titel ?? 'Unterrichtsstunde'}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: Georgia, 'Times New Roman', serif;
-      font-size: 12pt;
-      line-height: 1.65;
-      color: #111;
-      background: #fff;
-      padding: 28mm 24mm;
-      max-width: 210mm;
-      margin: 0 auto;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @media screen {
+      body { background: #e8e8e8; padding: 20px; }
+      .karte {
+        width: 105mm;
+        min-height: 148mm;
+        margin: 12px auto;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 8mm;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 9pt;
+        line-height: 1.45;
+        color: #111;
+        overflow: hidden;
+      }
     }
-    h1 {
-      font-size: 16pt;
-      font-weight: bold;
-      margin-bottom: 18pt;
-      padding-bottom: 8pt;
-      border-bottom: 1.5px solid #333;
-    }
-    pre {
-      font-family: Georgia, 'Times New Roman', serif;
-      font-size: 12pt;
-      line-height: 1.65;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
+
     @media print {
-      body { padding: 0; }
+      body { margin: 0; background: #fff; }
+      .karte {
+        width: 105mm;
+        height: 148mm;
+        page-break-after: always;
+        overflow: hidden;
+        padding: 8mm;
+        box-sizing: border-box;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 8.5pt;
+        line-height: 1.4;
+        color: #111;
+      }
+      .karte:last-child { page-break-after: avoid; }
+    }
+
+    /* Karte 0: Übersicht */
+    .karte-logo {
+      font-size: 7pt;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #aaa;
+      text-align: right;
+      margin-bottom: 6mm;
+    }
+    .karte-titel {
+      font-size: 14pt;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 2mm;
+      color: #111;
+    }
+    .karte-meta {
+      font-size: 8pt;
+      color: #666;
+      margin-bottom: 1mm;
+    }
+    .karte-dauer {
+      font-size: 8pt;
+      color: #888;
+      margin-bottom: 4mm;
+    }
+    .karte-section-label {
+      font-size: 7.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #888;
+      margin-bottom: 2mm;
+    }
+    .karte-lernziele ul {
+      padding-left: 4mm;
+    }
+    .karte-lernziele li {
+      font-size: 8.5pt;
+      margin-bottom: 1.5mm;
+      color: #222;
+    }
+
+    /* Karten 1…N: Phasen */
+    .karte-phase-header {
+      display: flex;
+      align-items: baseline;
+      gap: 2mm;
+      margin-bottom: 3mm;
+      border-bottom: 0.5pt solid #e0e0e0;
+      padding-bottom: 2mm;
+    }
+    .karte-phase-num {
+      font-size: 16pt;
+      font-weight: 700;
+      color: #ccc;
+      line-height: 1;
+    }
+    .karte-phase-titel {
+      font-size: 10pt;
+      font-weight: 700;
+      color: #111;
+      flex: 1;
+    }
+    .karte-phase-dauer {
+      font-size: 8pt;
+      color: #888;
+      white-space: nowrap;
+    }
+    .karte-kurzfassung {
+      font-size: 10.5pt;
+      font-weight: 600;
+      color: #111;
+      line-height: 1.3;
+      margin-bottom: 3mm;
+    }
+    .karte-aktionen {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5mm;
+      margin-bottom: 3mm;
+    }
+    .karte-aktion {
+      font-size: 8pt;
+      color: #333;
+      display: flex;
+      gap: 1.5mm;
+      align-items: flex-start;
+    }
+    .karte-aktion-icon {
+      flex-shrink: 0;
+    }
+    .karte-material {
+      font-size: 7.5pt;
+      color: #555;
+      padding-left: 3.5mm;
+      margin-bottom: 2mm;
+    }
+    .karte-material li {
+      margin-bottom: 0.75mm;
+    }
+    .karte-transition {
+      font-size: 7.5pt;
+      color: #999;
+      font-style: italic;
+      margin-top: auto;
+      padding-top: 2mm;
+      border-top: 0.5pt solid #eee;
+    }
+
+    /* Letzte Karte: Differenzierung */
+    .karte-diff-block {
+      margin-bottom: 3mm;
+    }
+    .karte-diff-label {
+      font-size: 9pt;
+      font-weight: 700;
+      margin-bottom: 1.5mm;
+      color: #333;
+    }
+    .karte-diff-block p {
+      font-size: 8.5pt;
+      color: #333;
+      line-height: 1.4;
+    }
+    .karte-diff-hr {
+      border: none;
+      border-top: 0.5pt solid #ddd;
+      margin: 3mm 0;
     }
   </style>
 </head>
 <body>
-  <h1>${heading}</h1>
-  <pre>${escapedContent}</pre>
+  ${bodyHtml}
   <script>
     window.onload = function() {
       window.print();
